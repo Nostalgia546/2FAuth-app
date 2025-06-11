@@ -1,5 +1,9 @@
 # 2FAuth 移动端管理应用 (非官方)
 
+<div align="center">
+  <img src="https://cloud.lingyunlab.com/f/vlsA/GithubREADME.png" alt="2FAuth Mobile App Screenshot" width="800"/>
+</div>
+
 > ⚠️ **重要声明**: 这是一个非官方的2FAuth移动端应用，使用官方api来实现功能。
 > 
 > 📱 **项目状态**: 这是初版应用，花费了大约半天时间开发完成。目前功能基本可用，个人自用没有问题，但很多功能还不够完善。如果有人点star或者关注这个项目，我会继续更新和完善功能。
@@ -17,7 +21,7 @@
 [![Pinia](https://img.shields.io/badge/Pinia-2.0-FF6B35?style=flat-square)](https://pinia.vuejs.org/)
 
 [功能特性](#-功能特性) • [快速开始](#-快速开始) • [下载安装](#-下载安装) • [技术架构](#-技术架构) • [构建指南](#-构建指南)
-https://cloud.lingyunlab.com/f/vlsA/GithubREADME.png
+
 </div>
 
 ## 📱 下载安装
