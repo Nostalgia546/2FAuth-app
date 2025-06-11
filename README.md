@@ -1,8 +1,6 @@
 # 2FAuth 移动端管理应用 (非官方)
 
-<div align="center">
-  <img src="https://cloud.lingyunlab.com/f/vlsA/GithubREADME.png" alt="2FAuth Mobile App Screenshot" width="800"/>
-</div>
+
 
 > ⚠️ **重要声明**: 这是一个非官方的2FAuth移动端应用，使用官方api来实现功能。
 > 
@@ -23,7 +21,9 @@
 [功能特性](#-功能特性) • [快速开始](#-快速开始) • [下载安装](#-下载安装) • [技术架构](#-技术架构) • [构建指南](#-构建指南)
 
 </div>
-
+<div align="center">
+  <img src="https://cloud.lingyunlab.com/f/vlsA/GithubREADME.png" alt="2FAuth Mobile App Screenshot" width="800"/>
+</div>
 ## 📱 下载安装
 
 ### Android APK下载
