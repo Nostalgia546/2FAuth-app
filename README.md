@@ -17,7 +17,7 @@
 [![Pinia](https://img.shields.io/badge/Pinia-2.0-FF6B35?style=flat-square)](https://pinia.vuejs.org/)
 
 [功能特性](#-功能特性) • [快速开始](#-快速开始) • [下载安装](#-下载安装) • [技术架构](#-技术架构) • [构建指南](#-构建指南)
-
+https://cloud.lingyunlab.com/f/vlsA/GithubREADME.png
 </div>
 
 ## 📱 下载安装
