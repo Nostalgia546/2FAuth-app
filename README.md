@@ -324,8 +324,6 @@ npx tauri build --target x86_64-unknown-linux-gnu # Linux
 
 ---
 
-<<<<<<< HEAD
+
 如果这个项目对你有帮助，请给个⭐️支持一下！
-=======
-如果这个项目对你有帮助，请给个⭐️支持一下！
->>>>>>> 832cc6310ee63a8521ad415c5ae436c7df945cc2
+
