@@ -1,3 +1,3 @@
-package com.twofa.app
+package com.twofauth.app
 
 class MainActivity : TauriActivity()

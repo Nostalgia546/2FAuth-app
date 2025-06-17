@@ -4,6 +4,9 @@ import router from './router'
 import App from './App.vue'
 import './style.css'
 
+// 导入移动端优化
+import { initMobileOptimizations } from './utils/mobile'
+
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -18,6 +21,9 @@ import { useAccountsStore } from './stores/accounts'
 router.isReady().then(async () => {
   const authStore = useAuthStore()
   const accountsStore = useAccountsStore()
+  
+  // 初始化移动端优化
+  initMobileOptimizations()
   
   // 初始化认证
   authStore.initAuth()

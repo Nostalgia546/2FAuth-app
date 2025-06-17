@@ -43,6 +43,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/edit-account/:id',
+    name: 'EditAccount',
+    component: () => import('@/views/EditAccount.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/qr-scanner',
     name: 'QRScanner',
     component: () => import('@/views/QRScanner.vue'),

@@ -16,23 +16,44 @@ export const useAccountsStore = defineStore('accounts', () => {
   const otpData = ref({}) // 存储所有账户的OTP数据 { accountId: { otp_value, period, remaining_time, generated_at } }
   const isGeneratingOTP = ref(false)
   let otpTimer = null
+  let lastUpdateTime = Date.now()
+  let isDocumentVisible = true
+
+  // 缓存控制
+  const lastFetchTime = ref({
+    accounts: 0,
+    groups: 0
+  })
+  const CACHE_DURATION = 5 * 60 * 1000 // 5分钟缓存
 
   const filteredAccounts = computed(() => {
     if (!selectedGroupId.value) return accounts.value
     return accounts.value.filter(account => account.group_id === selectedGroupId.value)
   })
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = async (forceRefresh = false) => {
+    // 检查缓存
+    if (!forceRefresh && accounts.value.length > 0) {
+      const timeSinceLastFetch = Date.now() - lastFetchTime.value.accounts
+      if (timeSinceLastFetch < CACHE_DURATION) {
+        console.log('使用缓存的账户数据')
+        return accounts.value
+      }
+    }
+
     try {
       appStore.setLoading(true)
       const response = await api.get('/api/v1/twofaccounts')
       accounts.value = response.data.data || response.data
+      lastFetchTime.value.accounts = Date.now()
       
       // 调试图标信息
       if (accounts.value.length > 0) {
         console.log('第一个账户的图标信息:', accounts.value[0].icon)
         console.log('第一个账户的完整数据:', accounts.value[0])
       }
+      
+      return accounts.value
     } catch (error) {
       console.error('获取账户失败:', error)
       appStore.showNotification('error', '获取账户列表失败')
@@ -53,13 +74,25 @@ export const useAccountsStore = defineStore('accounts', () => {
     }
   }
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (forceRefresh = false) => {
+    // 检查缓存
+    if (!forceRefresh && groups.value.length > 0) {
+      const timeSinceLastFetch = Date.now() - lastFetchTime.value.groups
+      if (timeSinceLastFetch < CACHE_DURATION) {
+        console.log('使用缓存的分组数据')
+        return groups.value
+      }
+    }
+
     try {
       const response = await api.get('/api/v1/groups')
       groups.value = response.data.data || response.data
+      lastFetchTime.value.groups = Date.now()
+      return groups.value
     } catch (error) {
       console.error('获取分组失败:', error)
       appStore.showNotification('error', '获取分组列表失败')
+      throw error
     }
   }
 
@@ -173,17 +206,32 @@ export const useAccountsStore = defineStore('accounts', () => {
     return otp.remaining_time <= 3
   }
 
-  // 更新OTP倒计时
+  // 更新OTP剩余时间
   const updateOTPTimers = () => {
+    const expiredAccountIds = []
+    
     Object.keys(otpData.value).forEach(accountId => {
       const otp = otpData.value[accountId]
       if (otp && otp.remaining_time > 0) {
-        otp.remaining_time--
+        otp.remaining_time -= 1
+        
+        // 如果时间刚好到0，标记需要重新生成
+        if (otp.remaining_time <= 0) {
+          expiredAccountIds.push(accountId)
+        }
       }
     })
+    
+    // 立即重新生成过期的OTP
+    if (expiredAccountIds.length > 0) {
+      console.log('检测到过期OTP，立即重新生成:', expiredAccountIds)
+      generateAllOTPs(expiredAccountIds).catch(error => {
+        console.error('重新生成OTP失败:', error)
+      })
+    }
   }
 
-  // 自动刷新过期的OTP
+  // 刷新过期的OTP（备用方法）
   const refreshExpiredOTPs = async () => {
     const expiredAccountIds = Object.keys(otpData.value).filter(accountId => {
       const otp = otpData.value[accountId]
@@ -196,15 +244,91 @@ export const useAccountsStore = defineStore('accounts', () => {
     }
   }
 
+  // 监听页面可见性变化
+  const handleVisibilityChange = async () => {
+    const wasVisible = isDocumentVisible
+    isDocumentVisible = !document.hidden
+    
+    console.log('页面可见性变化:', isDocumentVisible ? '可见' : '隐藏')
+    
+    if (!wasVisible && isDocumentVisible) {
+      // 从后台返回前台
+      const now = Date.now()
+      const timeDiff = now - lastUpdateTime
+      const secondsDiff = Math.floor(timeDiff / 1000)
+      
+      console.log(`应用从后台返回，后台时间: ${secondsDiff}秒`)
+      
+      if (accounts.value.length > 0) {
+        // 智能更新OTP：根据时间差决定是更新剩余时间还是重新生成
+        const accountsNeedingRefresh = []
+        
+        Object.keys(otpData.value).forEach(accountId => {
+          const otp = otpData.value[accountId]
+          if (otp) {
+            // 计算新的剩余时间
+            const newRemainingTime = Math.max(0, otp.remaining_time - secondsDiff)
+            
+            if (newRemainingTime <= 0) {
+              // 如果已经过期，标记需要重新生成
+              accountsNeedingRefresh.push(accountId)
+              console.log(`账户 ${accountId} OTP已过期，需要重新生成`)
+            } else {
+              // 如果还没过期，只更新剩余时间
+              otp.remaining_time = newRemainingTime
+              console.log(`账户 ${accountId} 更新剩余时间: ${newRemainingTime}秒`)
+            }
+          } else {
+            // 如果没有OTP数据，标记需要生成
+            accountsNeedingRefresh.push(accountId)
+          }
+        })
+        
+        // 如果有账户需要重新生成OTP
+        if (accountsNeedingRefresh.length > 0) {
+          console.log(`重新生成 ${accountsNeedingRefresh.length} 个过期OTP`)
+          await generateAllOTPs(accountsNeedingRefresh)
+        }
+        
+        // 确保所有账户都有OTP数据
+        const allAccountIds = accounts.value.map(acc => acc.id)
+        const missingOTPAccounts = allAccountIds.filter(id => !otpData.value[id])
+        
+        if (missingOTPAccounts.length > 0) {
+          console.log(`生成 ${missingOTPAccounts.length} 个缺失的OTP`)
+          await generateAllOTPs(missingOTPAccounts)
+        }
+      }
+    }
+    
+    lastUpdateTime = Date.now()
+  }
+
+  // 根据时间差更新OTP倒计时
+  const updateOTPTimersWithTimeDiff = (timeDiff) => {
+    const secondsDiff = Math.floor(timeDiff / 1000)
+    
+    Object.keys(otpData.value).forEach(accountId => {
+      const otp = otpData.value[accountId]
+      if (otp && otp.remaining_time > 0) {
+        otp.remaining_time = Math.max(0, otp.remaining_time - secondsDiff)
+      }
+    })
+  }
+
   // 启动OTP自动更新
   const startOTPTimer = () => {
     if (otpTimer) return // 已经启动
     
+    // 添加页面可见性监听
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+    }
+    
     otpTimer = setInterval(async () => {
-      updateOTPTimers()
-      // 每10秒检查一次是否有需要刷新的OTP
-      if (Date.now() % 10000 < 1000) {
-        await refreshExpiredOTPs()
+      if (isDocumentVisible) {
+        updateOTPTimers()
+        lastUpdateTime = Date.now()
       }
     }, 1000)
     
@@ -217,6 +341,11 @@ export const useAccountsStore = defineStore('accounts', () => {
       clearInterval(otpTimer)
       otpTimer = null
       console.log('OTP自动更新已停止')
+    }
+    
+    // 移除页面可见性监听
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }
 
@@ -235,7 +364,7 @@ export const useAccountsStore = defineStore('accounts', () => {
         return
       }
       
-      // 获取账户数据
+      // 获取账户数据（使用缓存）
       if (accounts.value.length === 0) {
         await fetchAccounts()
         await fetchGroups()
@@ -243,9 +372,16 @@ export const useAccountsStore = defineStore('accounts', () => {
       
       if (accounts.value.length > 0) {
         console.log('初始化OTP系统，账户数量:', accounts.value.length)
-        await generateAllOTPs()
+        
+        // 启动定时器但不等待OTP生成完成
         startOTPTimer()
-        console.log('OTP系统初始化完成')
+        
+        // 异步生成OTP，不阻塞初始化
+        generateAllOTPs().then(() => {
+          console.log('OTP系统初始化完成')
+        }).catch(error => {
+          console.error('OTP生成失败:', error)
+        })
       } else {
         console.log('没有账户，跳过OTP系统初始化')
       }
@@ -284,20 +420,15 @@ export const useAccountsStore = defineStore('accounts', () => {
 
   const updateAccount = async (accountId, accountData) => {
     try {
-      appStore.setLoading(true)
       const response = await api.put(`/api/v1/twofaccounts/${accountId}`, accountData)
       const index = accounts.value.findIndex(acc => acc.id === accountId)
       if (index !== -1) {
         accounts.value[index] = response.data
       }
-      appStore.showNotification('success', '账户更新成功')
       return response.data
     } catch (error) {
       console.error('更新账户失败:', error)
-      appStore.showNotification('error', '更新账户失败')
       throw error
-    } finally {
-      appStore.setLoading(false)
     }
   }
 
@@ -516,6 +647,23 @@ export const useAccountsStore = defineStore('accounts', () => {
     return fullUrl
   }
 
+  // 强制刷新所有数据
+  const forceRefreshAll = async () => {
+    try {
+      appStore.setLoading(true)
+      await Promise.all([
+        fetchAccounts(true),
+        fetchGroups(true)
+      ])
+      appStore.showNotification('success', '数据刷新成功')
+    } catch (error) {
+      console.error('刷新数据失败:', error)
+      appStore.showNotification('error', '刷新数据失败')
+    } finally {
+      appStore.setLoading(false)
+    }
+  }
+
   return {
     // 状态
     accounts,
@@ -570,6 +718,7 @@ export const useAccountsStore = defineStore('accounts', () => {
          // 账户图标功能
      getAccountDetails,
      getAccountIcon,
-     getIconUrl
+     getIconUrl,
+     forceRefreshAll
   }
 }) 

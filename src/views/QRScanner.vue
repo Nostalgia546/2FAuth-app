@@ -1,34 +1,93 @@
 <template>
-  <div class="min-h-screen bg-gray-50 pb-20">
+  <div class="min-h-screen bg-gray-900">
     <!-- 固定头部 -->
-    <header class="fixed top-0 left-0 right-0 bg-white shadow-sm border-b border-gray-200 z-40">
+    <header class="fixed top-0 left-0 right-0 bg-black/50 backdrop-blur-sm z-40">
       <div class="px-4 py-4">
-        <div class="flex items-center space-x-3">
-          <button @click="$router.go(-1)" class="p-2 hover:bg-gray-100 rounded-lg">
-            <ArrowLeft class="h-5 w-5 text-gray-600" />
+        <div class="flex items-center justify-between">
+          <button @click="$router.go(-1)" class="p-2 hover:bg-white/10 rounded-lg">
+            <ArrowLeft class="h-5 w-5 text-white" />
           </button>
-          <h1 class="text-xl font-semibold text-gray-900">扫描QR码</h1>
+          <h1 class="text-lg font-medium text-white">扫描二维码</h1>
+          <button
+            @click="toggleFlash"
+            :disabled="!hasFlash"
+            class="p-2 hover:bg-white/10 rounded-lg disabled:opacity-50"
+          >
+            <Flashlight class="h-5 w-5 text-white" />
+          </button>
         </div>
       </div>
     </header>
 
-    <div class="px-4 py-6 space-y-6" style="margin-top: 80px;">
-      <!-- 扫描方式选择 -->
-      <div class="card">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">选择扫描方式</h2>
-        <div class="grid grid-cols-1 gap-3">
-          <button
-            @click="startCameraScanning"
-            :disabled="!isCameraSupported"
-            class="flex items-center justify-center space-x-3 py-4 px-4 bg-primary-50 text-primary-600 rounded-xl font-medium hover:bg-primary-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Camera class="h-6 w-6" />
-            <span>{{ isCameraSupported ? '使用摄像头扫描' : '摄像头不可用' }}</span>
-          </button>
+    <!-- 摄像头预览 -->
+    <div class="relative w-full h-screen">
+      <video
+        ref="videoElement"
+        class="w-full h-full object-cover"
+        autoplay
+        muted
+        playsinline
+        @loadedmetadata="onVideoLoaded"
+      ></video>
+      
+      <!-- 扫描框覆盖层 -->
+      <div class="absolute inset-0 flex items-center justify-center">
+        <!-- 四角遮罩 -->
+        <div class="relative">
+          <!-- 扫描框 -->
+          <div class="w-64 h-64 relative">
+            <!-- 四个角的边框 -->
+            <div class="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-white"></div>
+            <div class="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 border-white"></div>
+            <div class="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 border-white"></div>
+            <div class="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-white"></div>
+            
+            <!-- 扫描线动画 -->
+            <div 
+              class="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent opacity-75 animate-pulse"
+              :style="{ top: `${scanLinePosition}%` }"
+            ></div>
+          </div>
           
-          <label class="flex items-center justify-center space-x-3 py-4 px-4 bg-blue-50 text-blue-600 rounded-xl font-medium hover:bg-blue-100 transition-colors cursor-pointer">
-            <Upload class="h-6 w-6" />
-            <span>选择图片文件</span>
+          <!-- 提示文字 -->
+          <div class="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
+            <p class="text-white text-sm mb-2">{{ scanStatus }}</p>
+            <div v-if="isScanning" class="flex items-center justify-center space-x-2">
+              <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              <span class="text-white text-xs">扫描中...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-6">
+        <div class="flex items-center justify-center space-x-6">
+          <button
+            @click="showManualInput = true"
+            class="flex flex-col items-center space-y-1 text-white"
+          >
+            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+              <Type class="h-6 w-6" />
+            </div>
+            <span class="text-xs">手动输入</span>
+          </button>
+
+          <button
+            @click="isScanning ? stopScanning() : startCameraScanning()"
+            class="flex flex-col items-center space-y-1 text-white"
+          >
+            <div class="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center border-4 border-white/30">
+              <Camera class="h-8 w-8" />
+            </div>
+            <span class="text-xs">{{ isScanning ? '停止' : '扫描' }}</span>
+          </button>
+
+          <label class="flex flex-col items-center space-y-1 text-white cursor-pointer">
+            <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+              <Upload class="h-6 w-6" />
+            </div>
+            <span class="text-xs">选择图片</span>
             <input
               type="file"
               @change="handleImageUpload"
@@ -36,109 +95,66 @@
               class="hidden"
             />
           </label>
-          
-          <button
-            @click="showManualInput = true"
-            class="flex items-center justify-center space-x-3 py-4 px-4 bg-green-50 text-green-600 rounded-xl font-medium hover:bg-green-100 transition-colors"
-          >
-            <Type class="h-6 w-6" />
-            <span>手动输入二维码内容</span>
-          </button>
         </div>
       </div>
 
-      <!-- 摄像头扫描区域 -->
-      <div v-if="isScanning" class="card">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">摄像头扫描</h2>
-        <div class="relative">
-          <video
-            ref="videoElement"
-            class="w-full h-64 bg-black rounded-lg object-cover"
-            autoplay
-            muted
-            playsinline
-          ></video>
-          <div class="absolute inset-0 border-2 border-primary-500 rounded-lg pointer-events-none">
-            <div class="absolute inset-4 border border-white/50 rounded"></div>
+      <!-- 扫描到结果的弹出层 -->
+      <div v-if="scannedData" class="absolute inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full">
+          <div class="text-center mb-4">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Check class="h-8 w-8 text-green-600" />
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">扫描成功</h3>
           </div>
-          <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <button
-              @click="stopScanning"
-              class="px-6 py-2 bg-red-500 text-white rounded-lg font-medium"
-            >
-              停止扫描
-            </button>
-          </div>
-        </div>
-        <p class="text-sm text-gray-600 mt-2 text-center">
-          将二维码对准扫描框进行识别
-        </p>
-      </div>
 
-      <!-- 扫描结果 -->
-      <div v-if="scannedData" class="card">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">扫描结果</h2>
-        <div class="space-y-4">
-          <div class="bg-gray-50 rounded-lg p-4">
-            <h3 class="font-medium text-gray-900 mb-2">原始数据</h3>
-            <p class="text-sm text-gray-600 font-mono break-all">{{ scannedData }}</p>
-          </div>
-          
-          <div v-if="decodedAccount" class="bg-green-50 rounded-lg p-4">
-            <h3 class="font-medium text-green-900 mb-3">识别的账户信息</h3>
-            <div class="space-y-2">
-              <div class="flex justify-between">
-                <span class="text-sm text-green-700">服务名称:</span>
-                <span class="text-sm font-medium text-green-900">{{ decodedAccount.service || '未知' }}</span>
+          <div v-if="decodedAccount" class="space-y-3 mb-6">
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">服务名称</span>
+                <span class="text-sm font-medium text-gray-900">{{ decodedAccount.service || '未知' }}</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-green-700">账户名:</span>
-                <span class="text-sm font-medium text-green-900">{{ decodedAccount.account || '未知' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-green-700">算法:</span>
-                <span class="text-sm font-medium text-green-900">{{ decodedAccount.algorithm || 'SHA1' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-sm text-green-700">位数:</span>
-                <span class="text-sm font-medium text-green-900">{{ decodedAccount.digits || 6 }}</span>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">账户名</span>
+                <span class="text-sm font-medium text-gray-900">{{ decodedAccount.account || '未知' }}</span>
               </div>
             </div>
           </div>
-          
-          <div v-if="decodeError" class="bg-red-50 rounded-lg p-4">
-            <h3 class="font-medium text-red-900 mb-2">解码失败</h3>
+
+          <div v-if="decodeError" class="bg-red-50 rounded-lg p-3 mb-6">
             <p class="text-sm text-red-700">{{ decodeError }}</p>
           </div>
-          
+
           <div class="flex space-x-3">
+            <button
+              @click="resetScanner"
+              class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium"
+            >
+              重新扫描
+            </button>
             <button
               v-if="decodedAccount"
               @click="addAccount"
               :disabled="isAdding"
-              class="flex-1 py-3 px-4 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
+              class="flex-1 py-3 px-4 bg-primary-600 text-white rounded-xl font-medium disabled:opacity-50"
             >
-              {{ isAdding ? '添加中...' : '添加到账户' }}
-            </button>
-            <button
-              @click="resetScanner"
-              class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-            >
-              重新扫描
+              {{ isAdding ? '添加中...' : '添加账户' }}
             </button>
           </div>
         </div>
       </div>
 
       <!-- 手动输入对话框 -->
-      <div v-if="showManualInput" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div v-if="showManualInput" class="absolute inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-6 max-w-sm w-full">
           <h3 class="text-lg font-medium text-gray-900 mb-4">手动输入二维码内容</h3>
           <textarea
             v-model="manualInput"
-            placeholder="请粘贴或输入二维码内容..."
+            placeholder="请粘贴二维码内容..."
             rows="4"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-sm"
           ></textarea>
           <div class="flex space-x-3 mt-4">
             <button
@@ -157,42 +173,18 @@
           </div>
         </div>
       </div>
-
-      <!-- 使用说明 -->
-      <div class="card">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">使用说明</h2>
-        <div class="space-y-3 text-sm text-gray-600">
-          <div class="flex items-start space-x-3">
-            <div class="h-6 w-6 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-xs font-medium text-primary-600">1</span>
-            </div>
-            <p>使用摄像头扫描2FA二维码，或选择保存在手机中的二维码图片</p>
-          </div>
-          <div class="flex items-start space-x-3">
-            <div class="h-6 w-6 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-xs font-medium text-primary-600">2</span>
-            </div>
-            <p>系统会自动解析二维码中的账户信息</p>
-          </div>
-          <div class="flex items-start space-x-3">
-            <div class="h-6 w-6 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-xs font-medium text-primary-600">3</span>
-            </div>
-            <p>确认信息无误后，点击"添加到账户"完成导入</p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAppStore } from '@/stores/app'
+import jsQR from 'jsqr'
 import {
-  ArrowLeft, Camera, Upload, Type
+  ArrowLeft, Camera, Upload, Type, Flashlight, Check
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -200,58 +192,116 @@ const accountsStore = useAccountsStore()
 const appStore = useAppStore()
 
 const videoElement = ref(null)
+const canvasElement = ref(null)
 const isScanning = ref(false)
-const isCameraSupported = ref(false)
+const hasFlash = ref(false)
+const flashEnabled = ref(false)
 const scannedData = ref('')
 const decodedAccount = ref(null)
 const decodeError = ref('')
 const isAdding = ref(false)
 const showManualInput = ref(false)
 const manualInput = ref('')
+const scanLinePosition = ref(0)
+const scanStatus = ref('将二维码对准扫描框')
 
 let stream = null
 let scanningInterval = null
+let animationFrame = null
 
-// 检查摄像头支持
-onMounted(async () => {
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    isCameraSupported.value = devices.some(device => device.kind === 'videoinput')
-  } catch (error) {
-    console.error('检查摄像头失败:', error)
-    isCameraSupported.value = false
+// 扫描线动画
+const animateScanLine = () => {
+  scanLinePosition.value = (Date.now() / 10) % 100
+  if (isScanning.value) {
+    animationFrame = requestAnimationFrame(animateScanLine)
   }
+}
+
+onMounted(async () => {
+  // 自动开始扫描
+  await nextTick()
+  startCameraScanning()
 })
 
 onUnmounted(() => {
   stopScanning()
 })
 
+const onVideoLoaded = () => {
+  // 检查是否有闪光灯
+  if (stream) {
+    const track = stream.getVideoTracks()[0]
+    const capabilities = track.getCapabilities()
+    hasFlash.value = !!capabilities.torch
+  }
+}
+
 const startCameraScanning = async () => {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
+    scanStatus.value = '正在启动摄像头...'
+    
+    const constraints = {
       video: { 
         facingMode: 'environment', // 后置摄像头
-        width: { ideal: 640 },
-        height: { ideal: 480 }
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
       }
-    })
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia(constraints)
     
     if (videoElement.value) {
       videoElement.value.srcObject = stream
-      isScanning.value = true
+      await videoElement.value.play()
       
-      // 模拟扫描过程（实际项目中需要使用QR码扫描库）
-      scanningInterval = setInterval(() => {
-        // 这里应该使用实际的QR码扫描库
-        // 比如 qr-scanner 或 jsQR
-        console.log('扫描中...')
-      }, 1000)
+      isScanning.value = true
+      scanStatus.value = '将二维码对准扫描框'
+      
+      // 开始扫描线动画
+      animateScanLine()
+      
+      // 开始QR码识别
+      startQRDetection()
     }
   } catch (error) {
     console.error('启动摄像头失败:', error)
-    appStore.showNotification('error', '无法访问摄像头')
+    scanStatus.value = '摄像头启动失败'
+    appStore.showNotification('error', '无法访问摄像头，请检查权限设置')
   }
+}
+
+const startQRDetection = () => {
+  if (!videoElement.value) return
+
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  
+  const detectQR = () => {
+    if (!isScanning.value || !videoElement.value.videoWidth) {
+      scanningInterval = requestAnimationFrame(detectQR)
+      return
+    }
+
+    canvas.width = videoElement.value.videoWidth
+    canvas.height = videoElement.value.videoHeight
+    
+    context.drawImage(videoElement.value, 0, 0, canvas.width, canvas.height)
+    
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+    const code = jsQR(imageData.data, imageData.width, imageData.height)
+    
+    if (code) {
+      console.log('检测到QR码:', code.data)
+      scannedData.value = code.data
+      decodeQRData(code.data)
+      stopScanning()
+      return
+    }
+    
+    scanningInterval = requestAnimationFrame(detectQR)
+  }
+  
+  scanningInterval = requestAnimationFrame(detectQR)
 }
 
 const stopScanning = () => {
@@ -261,11 +311,33 @@ const stopScanning = () => {
   }
   
   if (scanningInterval) {
-    clearInterval(scanningInterval)
+    cancelAnimationFrame(scanningInterval)
     scanningInterval = null
   }
   
+  if (animationFrame) {
+    cancelAnimationFrame(animationFrame)
+    animationFrame = null
+  }
+  
   isScanning.value = false
+  flashEnabled.value = false
+  scanStatus.value = '已停止扫描'
+}
+
+const toggleFlash = async () => {
+  if (!stream || !hasFlash.value) return
+  
+  try {
+    const track = stream.getVideoTracks()[0]
+    await track.applyConstraints({
+      advanced: [{ torch: !flashEnabled.value }]
+    })
+    flashEnabled.value = !flashEnabled.value
+  } catch (error) {
+    console.error('切换闪光灯失败:', error)
+    appStore.showNotification('error', '闪光灯切换失败')
+  }
 }
 
 const handleImageUpload = async (event) => {
@@ -273,13 +345,30 @@ const handleImageUpload = async (event) => {
   if (!file) return
   
   try {
-    // 这里应该使用QR码解析库来处理图片
-    // 暂时模拟处理过程
-    appStore.showNotification('info', 'QR码解析功能开发中...')
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    const img = new Image()
     
-    // 清空input
-    event.target.value = ''
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      context.drawImage(img, 0, 0)
+      
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+      const code = jsQR(imageData.data, imageData.width, imageData.height)
+      
+      if (code) {
+        scannedData.value = code.data
+        decodeQRData(code.data)
+      } else {
+        appStore.showNotification('error', '未在图片中找到有效的二维码')
+      }
+    }
+    
+    img.src = URL.createObjectURL(file)
+    event.target.value = '' // 清空input
   } catch (error) {
+    console.error('图片解析失败:', error)
     appStore.showNotification('error', '图片解析失败')
   }
 }
@@ -299,17 +388,26 @@ const processManualInput = async () => {
 
 const decodeQRData = async (data) => {
   try {
-    // 使用2FAuth API解码QR码数据
-    const result = await accountsStore.decodeQRCode({ qrcode: data })
-    decodedAccount.value = result
-    decodeError.value = ''
+    // 首先尝试本地解析
+    tryLocalDecode(data)
+    
+    // 如果本地解析成功，再尝试服务器验证
+    if (decodedAccount.value) {
+      try {
+        const result = await accountsStore.decodeQRCode({ qrcode: data })
+        // 如果服务器返回更准确的数据，使用服务器数据
+        if (result && result.service) {
+          decodedAccount.value = result
+        }
+      } catch (error) {
+        // 服务器解析失败不影响本地解析结果
+        console.log('服务器解析失败，使用本地解析结果')
+      }
+    }
   } catch (error) {
     console.error('解码QR码失败:', error)
-    decodeError.value = error.response?.data?.message || '无法解析二维码内容'
+    decodeError.value = '无法解析二维码内容'
     decodedAccount.value = null
-    
-    // 尝试本地解析（基本的otpauth URL格式）
-    tryLocalDecode(data)
   }
 }
 
@@ -329,7 +427,8 @@ const tryLocalDecode = (data) => {
         algorithm: params.get('algorithm') || 'SHA1',
         digits: parseInt(params.get('digits')) || 6,
         period: parseInt(params.get('period')) || 30,
-        secret: params.get('secret')
+        secret: params.get('secret'),
+        otp_type: type || 'totp'
       }
       
       decodeError.value = ''
@@ -339,6 +438,7 @@ const tryLocalDecode = (data) => {
   } catch (error) {
     console.error('本地解码失败:', error)
     decodeError.value = '无法识别的二维码格式'
+    decodedAccount.value = null
   }
 }
 
@@ -352,20 +452,22 @@ const addAccount = async () => {
     const accountData = {
       service: decodedAccount.value.service,
       account: decodedAccount.value.account,
-      uri: scannedData.value, // 原始URI
-      algorithm: decodedAccount.value.algorithm,
-      digits: decodedAccount.value.digits,
-      period: decodedAccount.value.period
+      secret: decodedAccount.value.secret,
+      otp_type: decodedAccount.value.otp_type || 'totp',
+      algorithm: decodedAccount.value.algorithm || 'SHA1',
+      digits: decodedAccount.value.digits || 6,
+      period: decodedAccount.value.period || 30
     }
     
-    // 先预览账户
-    await accountsStore.previewAccount(accountData)
+    // 如果有原始URI，也包含进去
+    if (scannedData.value.startsWith('otpauth://')) {
+      accountData.uri = scannedData.value
+    }
     
-    // 创建账户
     await accountsStore.createAccount(accountData)
     
     appStore.showNotification('success', '账户添加成功')
-    router.push('/accounts')
+    router.push('/dashboard')
   } catch (error) {
     console.error('添加账户失败:', error)
     appStore.showNotification('error', '添加账户失败')
@@ -378,13 +480,17 @@ const resetScanner = () => {
   scannedData.value = ''
   decodedAccount.value = null
   decodeError.value = ''
-  stopScanning()
+  startCameraScanning()
+}
+</script>
+
+<style scoped>
+.animate-scan-line {
+  animation: scanLine 2s linear infinite;
 }
 
-// 模拟QR码扫描结果（用于演示）
-const simulateQRScan = (data) => {
-  scannedData.value = data
-  decodeQRData(data)
-  stopScanning()
+@keyframes scanLine {
+  0% { top: 0%; }
+  100% { top: 100%; }
 }
-</script> 
+</style> 

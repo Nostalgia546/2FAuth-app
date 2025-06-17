@@ -14,25 +14,23 @@ val tauriProperties = Properties().apply {
 }
 
 android {
-    compileSdk = 35
-    namespace = "com.twofa.app"
-    
-    signingConfigs {
-        create("release") {
-            keyAlias = "2fauth"
-            keyPassword = "2fauth123"
-            storeFile = file("2fauth-release-key.keystore")
-            storePassword = "2fauth123"
-        }
-    }
-    
+    compileSdk = 34
+    namespace = "com.twofauth.app"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.twofa.app"
+        applicationId = "com.twofauth.app"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 34
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    signingConfigs {
+        create("release") {
+            keyAlias = "release"
+            keyPassword = "password"
+            storeFile = file("release.keystore")
+            storePassword = "password"
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -40,16 +38,15 @@ android {
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false
-            packaging {
-                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
+            packaging {                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
                 jniLibs.keepDebugSymbols.add("*/armeabi-v7a/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86_64/*.so")
             }
         }
         getByName("release") {
-            isMinifyEnabled = true
             signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))

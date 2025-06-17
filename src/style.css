@@ -5,17 +5,30 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    /* 禁用过度滚动和回弹效果 */
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
   
   body {
     @apply text-gray-900 bg-gray-50;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* 禁用过度滚动和回弹效果 */
+    overscroll-behavior: none;
+    overflow-x: hidden;
   }
 
   /* 禁用移动端点击高亮 */
   * {
     -webkit-tap-highlight-color: transparent;
+    /* 禁用过度滚动 */
+    overscroll-behavior: none;
+  }
+
+  /* 禁用所有元素的过度滚动 */
+  .min-h-screen {
+    overscroll-behavior: none;
   }
 
   /* 自定义滚动条 */

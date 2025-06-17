@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "2FAuth Mobile",
-  "version": "1.0.0",
-  "identifier": "com.twofa.app",
+  "productName": "2FAuth",
+  "version": "0.7.0",
+  "identifier": "com.twofauth.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "2FAuth Mobile",
+        "title": "2FAuth",
         "width": 400,
         "height": 600,
         "resizable": true,
@@ -27,7 +27,7 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "icons/2FAuthApp.png"
+      "icons/2FAuthApp.jpg"
     ]
   }
 }
