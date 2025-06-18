@@ -24,7 +24,8 @@
 <div align="center">
   <img src="https://cloud.lingyunlab.com/f/vlsA/GithubREADME.png" alt="2FAuth Mobile App Screenshot" width="800"/>
 </div>
-## 📱 下载安装
+
+## ✨ 下载安装
 
 ### Android APK下载
 
