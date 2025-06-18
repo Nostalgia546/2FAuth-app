@@ -4,7 +4,7 @@
     <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 z-40">
       <div class="px-4 py-4">
         <div class="flex items-center justify-center">
-          <h1 class="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">添加账户</h1>
+          <h1 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">添加账户</h1>
         </div>
       </div>
     </header>

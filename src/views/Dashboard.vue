@@ -3,18 +3,23 @@
     <!-- 固定顶部导航栏 -->
     <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 z-40">
       <div class="px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center h-16">
+        <div class="flex items-center h-16 justify-between">
           <div class="flex items-center space-x-3">
             <div class="h-8 w-8 bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg flex items-center justify-center shadow-lg">
               <Shield class="h-5 w-5 text-white" />
             </div>
             <h1 class="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">2FAuth</h1>
           </div>
+          
+          <!-- 顶栏版本的时间组件 - 根据内容区可见性显示 -->
+          <HeaderOTPTimer 
+            v-if="accounts.length > 0" 
+            :contentTimerVisible="contentTimerVisible"
+          />
         </div>
       </div>
     </header>
 
-    <!-- 主要内容 - 添加顶部间距 -->
     <main class="px-4 py-6 pt-20">
       <!-- 统计卡片 -->
       <div class="grid grid-cols-2 gap-4 mb-6">
@@ -43,34 +48,39 @@
         </div>
       </div>
 
+      <!-- 内容区版本的时间组件 -->
+      <GlobalOTPTimer 
+        v-if="accounts.length > 0" 
+        position="content" 
+        @visibility-change="onTimerVisibilityChange"
+      />
+
       <!-- 分组筛选 -->
-      <div class="mb-6">
-        <div class="flex space-x-2 overflow-x-auto pb-2">
-          <button
-            @click="setSelectedGroup(null)"
-            :class="[
-              'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm hover:shadow-md',
-              selectedGroupId === null
-                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg'
-                : 'bg-white/70 backdrop-blur-sm text-gray-600 border border-gray-200/50 hover:border-gray-300'
-            ]"
-          >
-            全部
-          </button>
-          <button
-            v-for="group in groups"
-            :key="group.id"
-            @click="setSelectedGroup(group.id)"
-            :class="[
-              'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm hover:shadow-md',
-              selectedGroupId === group.id
-                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg'
-                : 'bg-white/70 backdrop-blur-sm text-gray-600 border border-gray-200/50 hover:border-gray-300'
-            ]"
-          >
-            {{ group.name }}
-          </button>
-        </div>
+      <div class="flex space-x-2 overflow-x-auto pb-4 mb-6" v-if="groups.length > 0">
+        <button
+          @click="setSelectedGroup(null)"
+          :class="[
+            'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
+            selectedGroupId === null
+              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
+              : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
+          ]"
+        >
+          全部 ({{ accounts.length }})
+        </button>
+        <button
+          v-for="group in groups"
+          :key="group.id"
+          @click="setSelectedGroup(group.id)"
+          :class="[
+            'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
+            selectedGroupId === group.id
+              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
+              : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
+          ]"
+        >
+          {{ group.name }}
+        </button>
       </div>
 
       <!-- 账户列表 -->
@@ -89,69 +99,59 @@
         <div
           v-for="account in filteredAccounts"
           :key="account.id"
-          class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80 active:scale-95"
+          class="bg-white/70 backdrop-blur-sm rounded-2xl p-[5vw] min-h-[24vw] border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80 active:scale-95"
           @click="copyOTP(account)"
           @contextmenu.prevent="editAccount(account)"
           @touchstart="handleTouchStart(account)"
           @touchend="handleTouchEnd"
           title="点击复制验证码，长按编辑"
         >
-          <div class="flex items-center space-x-4">
-            <!-- 账户图标 -->
-            <AccountIcon :account="account" size="large" />
+          <div class="flex items-center space-x-[4vw] h-full">
+            <!-- 账户图标 - 响应式尺寸 -->
+            <AccountIcon :account="account" :size="'medium'" class="flex-shrink-0 w-[14vw] h-[14vw]" style="min-width: 52px; min-height: 52px; max-width: 72px; max-height: 72px;" />
 
             <!-- 账户信息 -->
             <div class="flex-1 min-w-0">
-              <h3 class="font-semibold text-gray-900 truncate text-lg">
+              <h3 class="font-semibold text-gray-900 truncate text-[4.5vw]" style="font-size: clamp(18px, 4.5vw, 22px);">
                 {{ account.service || account.account || '未知服务' }}
               </h3>
-              <p class="text-sm text-gray-600 truncate">
+              <p class="text-gray-600 truncate text-[3.5vw] mt-1" style="font-size: clamp(14px, 3.5vw, 18px);">
                 {{ account.account || account.service || '未知账户' }}
               </p>
             </div>
 
-            <!-- OTP显示 -->
-            <div class="text-right">
-              <div v-if="getAccountOTP(account.id)" class="space-y-2">
-                <div class="text-2xl font-mono font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
+            <!-- OTP显示区域 - 响应式 -->
+            <div class="text-right flex-shrink-0">
+              <div v-if="getAccountOTP(account.id)" class="space-y-1">
+                <div class="font-mono font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent text-[5.5vw]" style="font-size: clamp(20px, 5.5vw, 30px);">
                   {{ formatOTP(getAccountOTP(account.id).otp_value) }}
                 </div>
-                <div class="flex items-center justify-end space-x-2">
-                  <div
-                    class="h-2 bg-gray-200 rounded-full"
-                    style="width: 40px;"
-                  >
-                    <div
-                      class="h-2 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-1000"
-                      :style="`width: ${(getAccountOTP(account.id).period - getAccountOTP(account.id).remaining_time) / getAccountOTP(account.id).period * 100}%`"
-                    ></div>
-                  </div>
-                  <span class="text-sm text-gray-500 font-medium">{{ getAccountOTP(account.id).remaining_time }}s</span>
-                </div>
               </div>
-              <div v-else-if="isGeneratingOTP" class="space-y-2">
-                <div class="text-lg text-gray-400 font-medium">
+              <div v-else-if="isGeneratingOTP" class="space-y-1">
+                <div class="text-gray-400 font-medium text-[4vw]" style="font-size: clamp(16px, 4vw, 20px);">
                   正在生成...
                 </div>
-                <div class="h-2 bg-gray-100 rounded-full animate-pulse" style="width: 40px;"></div>
+                <div class="flex items-center justify-end">
+                  <div class="w-[7vw] h-1 bg-gray-200 rounded-full animate-pulse" style="width: clamp(28px, 7vw, 36px);"></div>
+                </div>
               </div>
-              <div v-else class="space-y-2">
-                <div class="text-lg text-gray-400 font-medium">
+              <div v-else class="space-y-1">
+                <div class="text-gray-400 font-medium text-[4vw]" style="font-size: clamp(16px, 4vw, 20px);">
                   暂无验证码
                 </div>
-                <div class="h-2 bg-gray-100 rounded-full" style="width: 40px;"></div>
               </div>
             </div>
 
-            <!-- 复制按钮 -->
+            <!-- 复制按钮 - 响应式 -->
             <button
               @click.stop="copyOTP(account)"
               :disabled="!getAccountOTP(account.id)"
-              class="p-3 rounded-xl transition-all shadow-sm hover:shadow-md"
+              class="p-[2vw] rounded-xl transition-all shadow-sm hover:shadow-md flex-shrink-0 w-[12vw] h-[12vw] flex items-center justify-center"
+              style="padding: clamp(10px, 2vw, 14px); min-width: 44px; min-height: 44px; max-width: 52px; max-height: 52px;"
               :class="getAccountOTP(account.id) ? 'text-gray-400 hover:text-primary-600 hover:bg-primary-50' : 'text-gray-300 cursor-not-allowed'"
               title="复制验证码"
             >
-              <Copy class="h-6 w-6" />
+              <Copy class="w-[6vw] h-[6vw]" style="width: clamp(22px, 6vw, 26px); height: clamp(22px, 6vw, 26px);" />
             </button>
           </div>
         </div>
@@ -164,7 +164,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAccountsStore } from '@/stores/accounts'
@@ -174,6 +174,8 @@ import {
 } from 'lucide-vue-next'
 import AccountIcon from '@/components/AccountIcon.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
+import HeaderOTPTimer from '@/components/HeaderOTPTimer.vue'
+import GlobalOTPTimer from '@/components/GlobalOTPTimer.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -182,6 +184,9 @@ const appStore = useAppStore()
 
 // 长按处理
 let longPressTimer = null
+
+// 内容区计时器可见性状态 - 初始设为true，避免不必要的动画
+const contentTimerVisible = ref(true)
 
 // 初始化认证
 authStore.initAuth()
@@ -203,6 +208,11 @@ const formatOTP = (otp) => {
 
 const getAccountOTP = (accountId) => {
   return accountsStore.getAccountOTP(accountId)
+}
+
+// 处理内容区计时器可见性变化
+const onTimerVisibilityChange = (isVisible) => {
+  contentTimerVisible.value = isVisible
 }
 
 const copyOTP = async (account) => {
@@ -258,6 +268,17 @@ onMounted(async () => {
     
     // 等待基础数据加载完成
     await Promise.all(loadingPromises)
+    
+    // 延迟一下让DOM渲染完成，然后设置初始可见性状态
+    await nextTick()
+    setTimeout(() => {
+      // 如果页面有内容区计时器，让它先检测一次可见性
+      // 这样可以避免从其他页面回来时的不必要动画
+      if (accounts.value.length > 0) {
+        // 初始状态假设内容区可见
+        contentTimerVisible.value = true
+      }
+    }, 100)
     
     // 异步初始化OTP系统，不阻塞界面显示
     accountsStore.initOTPSystem().catch(error => {

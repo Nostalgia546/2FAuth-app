@@ -63,8 +63,11 @@
       </div>
     </header>
 
+    <!-- 全局OTP时间组件 -->
+    <GlobalOTPTimer v-if="accounts.length > 0" />
+
     <!-- 账户列表 - 添加顶部间距 -->
-    <div class="px-4 py-4 space-y-3" style="margin-top: 220px;">
+    <div class="px-4 py-4 space-y-3" :style="{ marginTop: accounts.length > 0 ? '320px' : '220px' }">
       <div v-if="filteredAndSearchedAccounts.length === 0" class="text-center py-12">
         <div class="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Users class="h-8 w-8 text-gray-400" />
@@ -93,10 +96,10 @@
 
           <!-- 账户信息 -->
           <div class="flex-1 min-w-0">
-            <h3 class="font-medium text-gray-900 truncate">
+            <h3 class="font-medium text-gray-900 leading-tight break-words">
               {{ account.service || account.account || '未知服务' }}
             </h3>
-            <p class="text-sm text-gray-600 truncate">
+            <p class="text-sm text-gray-600 leading-tight break-words">
               {{ account.account || account.service || '未知账户' }}
             </p>
             <div class="flex items-center space-x-2 mt-1">
@@ -106,6 +109,37 @@
               <span class="badge" :class="account.otp_type === 'totp' ? 'badge-success' : 'badge-warning'">
                 {{ account.otp_type?.toUpperCase() || 'TOTP' }}
               </span>
+            </div>
+          </div>
+
+          <!-- OTP显示区域 - 简化版 -->
+          <div class="text-right">
+            <div v-if="getAccountOTP(account.id)" class="space-y-1">
+              <div class="text-xl font-mono font-bold text-primary-600">
+                {{ formatOTP(getAccountOTP(account.id).otp_value) }}
+              </div>
+              <div class="flex items-center justify-end space-x-2">
+                <span class="text-xs text-gray-500">点击复制</span>
+                <button
+                  @click.stop="copyOTP(account)"
+                  class="p-1 text-gray-400 hover:text-primary-600 transition-colors"
+                  title="复制验证码"
+                >
+                  <Copy class="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div v-else-if="isGeneratingOTP" class="space-y-1">
+              <div class="text-lg text-gray-400">
+                正在生成...
+              </div>
+              <div class="w-8 h-1 bg-gray-200 rounded-full animate-pulse"></div>
+            </div>
+            <div v-else class="space-y-1">
+              <div class="text-lg text-gray-400">
+                暂无验证码
+              </div>
+              <span class="text-xs text-gray-400">等待生成</span>
             </div>
           </div>
 
@@ -127,70 +161,33 @@
             </button>
           </div>
         </div>
-
-        <!-- OTP显示 -->
-        <div class="text-right">
-          <div v-if="getAccountOTP(account.id)" class="space-y-1">
-            <div class="text-2xl font-mono font-bold text-primary-600">
-              {{ formatOTP(getAccountOTP(account.id).otp_value) }}
-            </div>
-            <div class="flex items-center justify-end space-x-2">
-              <div
-                class="h-2 bg-gray-200 rounded-full"
-                style="width: 40px;"
-              >
-                <div
-                  class="h-2 bg-primary-600 rounded-full transition-all duration-1000"
-                  :style="`width: ${(getAccountOTP(account.id).period - getAccountOTP(account.id).remaining_time) / getAccountOTP(account.id).period * 100}%`"
-                ></div>
-              </div>
-              <span class="text-sm text-gray-500">{{ getAccountOTP(account.id).remaining_time }}s</span>
-                             <button
-                 @click.stop="copyOTP(account)"
-                 class="p-1 text-gray-400 hover:text-primary-600 transition-colors"
-                 title="复制验证码"
-               >
-                 <Copy class="h-4 w-4" />
-               </button>
-            </div>
-          </div>
-          <div v-else-if="isGeneratingOTP" class="space-y-1">
-            <div class="text-lg text-gray-400">
-              正在生成...
-            </div>
-            <div class="h-2 bg-gray-100 rounded-full animate-pulse" style="width: 40px;"></div>
-          </div>
-          <div v-else class="space-y-1">
-            <div class="text-lg text-gray-400">
-              暂无验证码
-            </div>
-            <div class="h-2 bg-gray-100 rounded-full" style="width: 40px;"></div>
-          </div>
-        </div>
       </div>
     </div>
 
+    <!-- 底部导航 -->
+    <BottomTabBar />
+
     <!-- 删除确认对话框 -->
-    <div v-if="accountToDelete" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-2xl p-6 max-w-sm w-full">
+    <div v-if="accountToDelete" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl p-6 m-4 max-w-sm w-full">
         <div class="text-center">
-          <div class="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Trash2 class="h-6 w-6 text-red-600" />
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle class="w-6 h-6 text-red-600" />
           </div>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">删除账户</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">删除账户</h3>
           <p class="text-gray-600 mb-6">
-            确定要删除 "{{ accountToDelete.service || accountToDelete.account }}" 吗？此操作无法撤销。
+            确定要删除账户 "{{ accountToDelete.service || accountToDelete.account }}" 吗？此操作无法撤销。
           </p>
           <div class="flex space-x-3">
             <button
               @click="accountToDelete = null"
-              class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium"
+              class="flex-1 py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
               取消
             </button>
             <button
               @click="confirmDelete"
-              class="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-medium"
+              class="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
             >
               删除
             </button>
@@ -207,9 +204,11 @@ import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAppStore } from '@/stores/app'
 import {
-  ArrowLeft, Plus, Search, Users, Edit, Trash2, Copy
+  ArrowLeft, Plus, Search, Users, Edit, Trash2, Copy, AlertTriangle
 } from 'lucide-vue-next'
 import AccountIcon from '@/components/AccountIcon.vue'
+import BottomTabBar from '@/components/BottomTabBar.vue'
+import GlobalOTPTimer from '@/components/GlobalOTPTimer.vue'
 
 const router = useRouter()
 const accountsStore = useAccountsStore()
