@@ -20,7 +20,7 @@
       </div>
     </header>
 
-    <main class="px-4 py-6 pt-20">
+    <main class="px-4 py-6 pt-20" @click="resetAllCards">
       <!-- 统计卡片 -->
       <div class="grid grid-cols-2 gap-4 mb-6">
         <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
@@ -99,13 +99,33 @@
         <div
           v-for="account in filteredAccounts"
           :key="account.id"
-          class="bg-white/70 backdrop-blur-sm rounded-2xl p-[5vw] min-h-[24vw] border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80 active:scale-95"
+          class="relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80"
           @click="copyOTP(account)"
-          @contextmenu.prevent="editAccount(account)"
-          @touchstart="handleTouchStart(account)"
-          @touchend="handleTouchEnd"
-          title="点击复制验证码，长按编辑"
+          @touchstart="handleTouchStart($event, account)"
+          @touchmove="handleTouchMove($event, account)"
+          @touchend="handleTouchEnd($event, account)"
+          title="点击复制验证码，左滑编辑"
         >
+          <!-- 隐藏的设置按钮 -->
+          <div 
+            :style="{ transform: `translateX(${getCardTransform(account.id) < -40 ? '0' : '100%'})` }"
+            class="absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-primary-400 to-primary-600 flex items-center justify-center z-10 transition-transform duration-300 ease-out"
+          >
+            <button
+              @click.stop="editAccount(account)"
+              class="text-white p-3 rounded-lg hover:bg-white/20 transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- 主要内容区域 -->
+          <div 
+            :style="{ transform: `translateX(${getCardTransform(account.id)}px)` }"
+            class="bg-white/70 backdrop-blur-sm rounded-2xl p-[5vw] min-h-[24vw] transition-transform duration-300 ease-out relative z-20"
+          >
           <div class="flex items-center space-x-[4vw] h-full">
             <!-- 账户图标 - 响应式尺寸 -->
             <AccountIcon :account="account" :size="'medium'" class="flex-shrink-0 w-[14vw] h-[14vw]" style="min-width: 52px; min-height: 52px; max-width: 72px; max-height: 72px;" />
@@ -154,6 +174,7 @@
               <Copy class="w-[6vw] h-[6vw]" style="width: clamp(22px, 6vw, 26px); height: clamp(22px, 6vw, 26px);" />
             </button>
           </div>
+          </div>
         </div>
       </div>
     </main>
@@ -182,8 +203,12 @@ const authStore = useAuthStore()
 const accountsStore = useAccountsStore()
 const appStore = useAppStore()
 
-// 长按处理
-let longPressTimer = null
+// 滑动处理
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+const cardTransforms = ref({})
+const isDragging = ref(false)
+const dragThreshold = 50 // 滑动阈值
 
 // 内容区计时器可见性状态 - 初始设为true，避免不必要的动画
 const contentTimerVisible = ref(true)
@@ -216,6 +241,17 @@ const onTimerVisibilityChange = (isVisible) => {
 }
 
 const copyOTP = async (account) => {
+  // 如果正在拖拽，不执行复制
+  if (isDragging.value) {
+    return
+  }
+  
+  // 如果当前卡片已经滑出，先重置状态
+  if (cardTransforms.value[account.id] && cardTransforms.value[account.id] < 0) {
+    cardTransforms.value[account.id] = 0
+    return
+  }
+  
   const otp = getAccountOTP(account.id)
   if (otp && otp.otp_value) {
     try {
@@ -237,18 +273,63 @@ const editAccount = (account) => {
   router.push(`/edit-account/${account.id}`)
 }
 
-// 长按处理
-const handleTouchStart = (account) => {
-  longPressTimer = setTimeout(() => {
-    editAccount(account)
-  }, 800) // 800ms长按
+// 获取卡片变换值
+const getCardTransform = (accountId) => {
+  return cardTransforms.value[accountId] || 0
 }
 
-const handleTouchEnd = () => {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer)
-    longPressTimer = null
+// 滑动处理
+const handleTouchStart = (event, account) => {
+  const touch = event.touches[0]
+  touchStartX.value = touch.clientX
+  touchStartY.value = touch.clientY
+  isDragging.value = false
+}
+
+const handleTouchMove = (event, account) => {
+  if (!event.touches[0]) return
+  
+  const touch = event.touches[0]
+  const deltaX = touch.clientX - touchStartX.value
+  const deltaY = touch.clientY - touchStartY.value
+  
+  // 判断是否为水平滑动
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+    isDragging.value = true
+    event.preventDefault()
+    
+    // 只允许向左滑动
+    if (deltaX < 0) {
+      const transform = Math.max(deltaX, -80) // 最大滑动80px
+      cardTransforms.value[account.id] = transform
+    } else {
+      cardTransforms.value[account.id] = 0
+    }
   }
+}
+
+const handleTouchEnd = (event, account) => {
+  if (!isDragging.value) {
+    // 如果不是拖拽，则执行点击复制
+    return
+  }
+  
+  const currentTransform = cardTransforms.value[account.id] || 0
+  
+  // 如果滑动距离超过阈值，保持显示设置按钮
+  if (Math.abs(currentTransform) > dragThreshold) {
+    cardTransforms.value[account.id] = -80
+  } else {
+    // 否则回弹
+    cardTransforms.value[account.id] = 0
+  }
+  
+  isDragging.value = false
+}
+
+// 重置所有卡片状态
+const resetAllCards = () => {
+  cardTransforms.value = {}
 }
 
 onMounted(async () => {
@@ -298,4 +379,4 @@ onUnmounted(() => {
     clearTimeout(longPressTimer)
   }
 })
-</script> 
+</script>

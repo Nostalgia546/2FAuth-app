@@ -10,7 +10,7 @@
     </header>
 
     <!-- 添加方式选择 - 添加顶部间距 -->
-    <div class="px-4 py-6" style="margin-top: 80px;" :class="{ 'h-screen overflow-hidden': addMethod === 'qr' }">
+    <div class="px-4 py-6" style="margin-top: 80px;" :class="{ 'overflow-hidden': addMethod === 'qr' }">
       <div class="grid grid-cols-2 gap-4 mb-6">
         <button
           @click="addMethod = 'qr'"
@@ -560,4 +560,4 @@ onMounted(async () => {
     }
   }
 })
-</script> 
+</script>
