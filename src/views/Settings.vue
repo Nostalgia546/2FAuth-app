@@ -67,9 +67,14 @@
         <div class="space-y-6">
           <!-- 服务器地址 -->
           <div class="space-y-3">
-            <label class="block text-sm font-medium text-gray-700">
-              服务器地址
-            </label>
+            <div class="flex justify-between items-center">
+              <label class="block text-sm font-medium text-gray-700">
+                服务器地址
+              </label>
+              <button @click="openEditConnection" class="text-xs text-primary-600 font-semibold hover:text-primary-700">
+                修改连接
+              </button>
+            </div>
             <div class="relative group">
               <input
                 :value="authStore.baseUrl || '未设置'"
@@ -200,6 +205,53 @@
       </div>
     </div>
 
+    <!-- 修改连接对话框 -->
+    <div v-if="showEditConnection" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-scale-up">
+        <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+          <Settings class="w-6 h-6 mr-2 text-primary-600" />
+          修改连接设置
+        </h3>
+        
+        <div class="space-y-5">
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">服务器地址</label>
+            <input 
+              v-model="editConnectionData.baseUrl" 
+              type="url" 
+              class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all outline-none"
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">API 密钥</label>
+            <input 
+              v-model="editConnectionData.apiKey" 
+              type="password" 
+              class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all outline-none"
+              placeholder="令牌..."
+            />
+          </div>
+        </div>
+
+        <div class="flex space-x-3 mt-8">
+          <button
+            @click="showEditConnection = false"
+            class="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
+          >
+            取消
+          </button>
+          <button
+            @click="saveConnection"
+            :disabled="isValidating"
+            class="flex-1 py-4 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-100 disabled:opacity-50"
+          >
+            {{ isValidating ? '验证中...' : '保存更改' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 底部导航 -->
     <BottomTabBar />
   </div>
@@ -228,6 +280,12 @@ const isLoading = ref(true)
 const loadError = ref('')
 const showApiKey = ref(false)
 const isRefreshing = ref(false)
+const showEditConnection = ref(false)
+const isValidating = ref(false)
+const editConnectionData = ref({
+  baseUrl: '',
+  apiKey: ''
+})
 
 // 复制到剪贴板
 const copyToClipboard = async (text) => {
@@ -263,6 +321,40 @@ const handleLogout = () => {
     authStore.logout()
     accountsStore.clearAllOTPs()
     router.push('/login')
+  }
+}
+
+// 修改连接设置
+const openEditConnection = () => {
+  editConnectionData.value = {
+    baseUrl: authStore.baseUrl,
+    apiKey: authStore.apiKey
+  }
+  showEditConnection.value = true
+}
+
+const saveConnection = async () => {
+  if (!editConnectionData.value.baseUrl || !editConnectionData.value.apiKey) {
+    appStore.showNotification('error', '请填写完整信息')
+    return
+  }
+
+  try {
+    isValidating.value = true
+    // 使用新的连接信息测试登录
+    await authStore.login(editConnectionData.value.baseUrl, editConnectionData.value.apiKey)
+    appStore.showNotification('success', '连接配置已更新并验证成功')
+    showEditConnection.value = false
+    // 强制刷新数据
+    await refreshData()
+  } catch (error) {
+    console.error('连接验证失败:', error)
+    let msg = '验证失败，请检查设置是否正确'
+    if (error.code === 'TIMEOUT') msg = '连接超时，请确认服务器地址正确且在线'
+    if (error.code === 'INVALID_URL') msg = '服务器地址格式错误'
+    appStore.showNotification('error', msg)
+  } finally {
+    isValidating.value = false
   }
 }
 

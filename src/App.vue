@@ -3,10 +3,17 @@
     <router-view />
     
     <!-- 全局加载指示器 -->
-    <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-2xl p-8 flex flex-col items-center space-y-4">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        <p class="text-gray-600">加载中...</p>
+    <div v-if="isLoading" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-[100] animate-fade-in">
+      <div class="bg-white rounded-3xl p-10 flex flex-col items-center space-y-6 shadow-2xl animate-scale-up">
+        <div class="relative">
+          <div class="w-16 h-16 rounded-full border-4 border-primary-50/50"></div>
+          <div class="w-16 h-16 rounded-full border-4 border-primary-600 border-t-transparent animate-spin absolute top-0"></div>
+          <Shield class="w-6 h-6 text-primary-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        </div>
+        <div class="text-center">
+          <p class="text-gray-900 font-bold text-lg">请稍候</p>
+          <p class="text-gray-500 text-sm">正在与服务器同步数据...</p>
+        </div>
       </div>
     </div>
 
@@ -28,7 +35,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { CheckCircle, AlertCircle, XCircle, X } from 'lucide-vue-next'
+import { CheckCircle, AlertCircle, XCircle, X, Shield } from 'lucide-vue-next'
 
 const appStore = useAppStore()
 

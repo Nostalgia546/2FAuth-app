@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  timeout: 10000,
+  timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -16,19 +16,19 @@ api.interceptors.request.use(
     if (baseUrl && !config.url.startsWith('http')) {
       config.baseURL = baseUrl
     }
-    
+
     // 添加认证头
     const apiKey = localStorage.getItem('2fauth_api_key')
     if (apiKey) {
       config.headers.Authorization = `Bearer ${apiKey}`
     }
-    
+
     // 请求日志
     console.log('API请求:', config.method?.toUpperCase(), config.url, {
       baseURL: config.baseURL,
       hasAuth: !!config.headers.Authorization
     })
-    
+
     return config
   },
   (error) => {
@@ -46,13 +46,13 @@ api.interceptors.response.use(
     if (error.response) {
       // 服务器返回了错误状态码
       const { status, data } = error.response
-      
+
       console.error('API错误响应:', {
         status,
         url: error.config?.url,
         data
       })
-      
+
       if (status === 401) {
         // 未授权，跳转到登录页
         localStorage.removeItem('2fauth_api_key')
@@ -72,7 +72,7 @@ api.interceptors.response.use(
       // 其他错误
       console.error('请求错误:', error.message)
     }
-    
+
     return Promise.reject(error)
   }
 )

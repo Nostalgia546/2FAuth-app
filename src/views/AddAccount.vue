@@ -95,7 +95,7 @@
               <div class="flex-1">
                 <button
                   type="button"
-                  @click="showIconPicker = !showIconPicker"
+                  @click="toggleIconPicker"
                   class="w-full py-3 px-4 bg-gray-100/80 text-gray-700 rounded-xl font-medium hover:bg-gray-200/80 transition-all cursor-pointer shadow-sm hover:shadow-md"
                 >
                   选择图标
@@ -122,21 +122,63 @@
                 </label>
               </div>
               
+              <!-- 图标来源切换 -->
+              <div class="flex p-1 bg-gray-100 rounded-xl mb-4">
+                <button 
+                  type="button"
+                  @click="iconSource = 'predefined'"
+                  class="flex-1 py-2 text-xs font-semibold rounded-lg transition-all"
+                  :class="iconSource === 'predefined' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'"
+                >
+                  精选图标
+                </button>
+                <button 
+                  type="button"
+                  @click="iconSource = 'server'"
+                  class="flex-1 py-2 text-xs font-semibold rounded-lg transition-all"
+                  :class="iconSource === 'server' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'"
+                >
+                  服务器图标
+                </button>
+              </div>
+
               <!-- 预定义图标 -->
-              <div>
+              <div v-if="iconSource === 'predefined'">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  选择预定义图标
+                  选择精选图标
                 </label>
                 <div class="grid grid-cols-6 gap-3">
                   <button
                     v-for="icon in predefinedIcons"
                     :key="icon.name"
                     type="button"
-                    @click="selectIcon(icon)"
+                    @click="selectIcon(icon.value)"
                     class="p-3 rounded-xl border-2 transition-all hover:border-primary-300"
                     :class="formData.icon === icon.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-white'"
                   >
                     <img :src="icon.value" :alt="icon.name" class="w-8 h-8 mx-auto" />
+                  </button>
+                </div>
+              </div>
+
+              <!-- 服务器已有图标 -->
+              <div v-if="iconSource === 'server'">
+                <div v-if="isFetchingIcons" class="flex justify-center py-8">
+                  <div class="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+                </div>
+                <div v-else-if="serverIcons.length === 0" class="text-center py-8 text-gray-500 text-sm">
+                  服务器上暂无图标
+                </div>
+                <div v-else class="grid grid-cols-6 gap-3 max-h-60 overflow-y-auto p-1">
+                  <button
+                    v-for="icon in serverIcons"
+                    :key="icon"
+                    type="button"
+                    @click="selectIcon(icon)"
+                    class="p-2 rounded-xl border-2 transition-all hover:border-primary-300"
+                    :class="formData.icon === icon ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-white'"
+                  >
+                    <img :src="accountsStore.getIconUrl(icon)" class="w-10 h-10 mx-auto object-contain rounded-lg" />
                   </button>
                 </div>
               </div>
@@ -154,6 +196,7 @@
               required
               class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
               placeholder="例如：Google、GitHub、Microsoft"
+              @dblclick="$event.target.select()"
             />
           </div>
 
@@ -168,6 +211,7 @@
               required
               class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
               placeholder="例如：your@email.com"
+              @dblclick="$event.target.select()"
             />
           </div>
 
@@ -183,6 +227,7 @@
                 required
                 class="w-full p-4 pr-12 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
                 placeholder="输入16位以上的密钥"
+                @dblclick="$event.target.select()"
               />
               <button
                 type="button"
@@ -309,7 +354,10 @@ const addMethod = ref('qr') // 默认扫码添加
 const showSecret = ref(false)
 const showAdvanced = ref(false)
 const showIconPicker = ref(false)
+const iconSource = ref('predefined') // 'predefined' or 'server'
+const isFetchingIcons = ref(false)
 const isLoading = ref(false)
+const serverIcons = computed(() => accountsStore.icons)
 
 const formData = reactive({
   service: '',
@@ -341,9 +389,21 @@ const predefinedIcons = [
 
 const groups = computed(() => accountsStore.groups)
 
-const selectIcon = (icon) => {
-  formData.icon = icon.value
+const selectIcon = (iconValue) => {
+  formData.icon = iconValue
   showIconPicker.value = false
+}
+
+const toggleIconPicker = async () => {
+  showIconPicker.value = !showIconPicker.value
+  if (showIconPicker.value && serverIcons.value.length === 0) {
+    try {
+      isFetchingIcons.value = true
+      await accountsStore.fetchIcons()
+    } finally {
+      isFetchingIcons.value = false
+    }
+  }
 }
 
 const goToQRScanner = () => {

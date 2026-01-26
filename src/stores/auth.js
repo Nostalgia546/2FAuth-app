@@ -11,17 +11,27 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (url, key) => {
     try {
+      // 基础URL清理
+      const formattedUrl = url.endsWith('/') ? url.slice(0, -1) : url
+
+      // 验证URL格式
+      try {
+        new URL(formattedUrl)
+      } catch (e) {
+        throw new Error('INVALID_URL')
+      }
+
       // 临时保存到localStorage以便拦截器使用
       localStorage.setItem('2fauth_api_key', key)
-      localStorage.setItem('2fauth_base_url', url.endsWith('/') ? url.slice(0, -1) : url)
+      localStorage.setItem('2fauth_base_url', formattedUrl)
 
-      // 测试API连接
-      const response = await api.get('/api/v1/user')
+      // 测试API连接 - 使用更短的超时时间
+      const response = await api.get('/api/v1/user', { timeout: 3000 })
       console.log('登录成功，用户信息:', response.data)
-      
+
       // 正式保存认证信息
       apiKey.value = key
-      baseUrl.value = url.endsWith('/') ? url.slice(0, -1) : url
+      baseUrl.value = formattedUrl
       user.value = response.data
 
       return true
@@ -30,6 +40,18 @@ export const useAuthStore = defineStore('auth', () => {
       // 清除临时保存的信息
       localStorage.removeItem('2fauth_api_key')
       localStorage.removeItem('2fauth_base_url')
+
+      if (error.message === 'INVALID_URL') {
+        const err = new Error('服务器地址格式不正确')
+        err.code = 'INVALID_URL'
+        throw err
+      }
+
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        const err = new Error('连接服务器超时，请检查地址是否正确')
+        err.code = 'TIMEOUT'
+        throw err
+      }
       throw error
     }
   }
@@ -40,7 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     localStorage.removeItem('2fauth_api_key')
     localStorage.removeItem('2fauth_base_url')
-    
+
     // 清理OTP系统 - 异步导入避免循环依赖
     import('@/stores/accounts').then(({ useAccountsStore }) => {
       const accountsStore = useAccountsStore()

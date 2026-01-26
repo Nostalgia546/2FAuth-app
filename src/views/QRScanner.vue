@@ -20,18 +20,29 @@
     </header>
 
     <!-- 摄像头预览 -->
-    <div class="relative w-full h-screen">
+    <div class="relative w-full h-screen bg-black flex items-center justify-center overflow-hidden">
+      <!-- 加载状态 -->
+      <div v-if="!isVideoReady" class="absolute inset-0 flex flex-col items-center justify-center z-10 bg-gray-900">
+        <div class="w-16 h-16 mb-4 relative">
+          <div class="absolute inset-0 border-4 border-primary-500/20 rounded-full"></div>
+          <div class="absolute inset-0 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <p class="text-gray-400 text-sm animate-pulse">{{ scanStatus }}</p>
+      </div>
+
       <video
         ref="videoElement"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-cover transition-opacity duration-300"
+        :class="{ 'opacity-100': isVideoReady, 'opacity-0': !isVideoReady }"
         autoplay
         muted
         playsinline
         @loadedmetadata="onVideoLoaded"
+        @canplay="isVideoReady = true"
       ></video>
       
       <!-- 扫描框覆盖层 -->
-      <div class="absolute inset-0 flex items-center justify-center">
+      <div v-if="isVideoReady" class="absolute inset-0 flex items-center justify-center">
         <!-- 四角遮罩 -->
         <div class="relative">
           <!-- 扫描框 -->
@@ -204,6 +215,7 @@ const showManualInput = ref(false)
 const manualInput = ref('')
 const scanLinePosition = ref(0)
 const scanStatus = ref('将二维码对准扫描框')
+const isVideoReady = ref(false)
 
 let stream = null
 let scanningInterval = null
@@ -391,17 +403,35 @@ const decodeQRData = async (data) => {
     // 首先尝试本地解析
     tryLocalDecode(data)
     
-    // 如果本地解析成功，再尝试服务器验证
+    // 如果本地解析成功，再尝试服务器验证，但不要显示错误提示，因为本地解析已经够了
     if (decodedAccount.value) {
       try {
-        const result = await accountsStore.decodeQRCode({ qrcode: data })
+        // 调用 API 时不显示错误通知
+        const result = await accountsStore.decodeQRCode({ qrcode: data, silent: true })
         // 如果服务器返回更准确的数据，使用服务器数据
         if (result && result.service) {
-          decodedAccount.value = result
+          decodedAccount.value = {
+            ...decodedAccount.value, // 保留本地解析的基础字段
+            ...result // 覆盖服务器返回的信息
+          }
         }
       } catch (error) {
         // 服务器解析失败不影响本地解析结果
-        console.log('服务器解析失败，使用本地解析结果')
+        process.env.NODE_ENV === 'development' && console.log('服务器解析失败，使用本地解析结果')
+      }
+    } else {
+      // 如果本地也没解析出来，再尝试服务器（最后机会）
+      try {
+        const result = await accountsStore.decodeQRCode({ qrcode: data })
+        if (result && (result.service || result.secret)) {
+          decodedAccount.value = result
+          decodeError.value = ''
+        } else {
+          throw new Error('解析失败')
+        }
+      } catch (error) {
+        decodeError.value = '无法解析二维码内容'
+        decodedAccount.value = null
       }
     }
   } catch (error) {

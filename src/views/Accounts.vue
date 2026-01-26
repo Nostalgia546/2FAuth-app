@@ -298,17 +298,22 @@ const confirmDelete = async () => {
 
 onMounted(async () => {
   try {
-    // 确保账户数据已加载
+    // 确保数据已加载，使用静默模式避免阻塞UI
+    const promises = []
     if (accountsStore.accounts.length === 0) {
-      await accountsStore.fetchAccounts()
-      await accountsStore.fetchGroups()
+      promises.push(accountsStore.fetchAccounts(false, true))
+      promises.push(accountsStore.fetchGroups(false, true))
     }
     
-    // 使用全局OTP管理系统，如果已经初始化过就不会重复初始化
+    if (promises.length > 0) {
+      await Promise.all(promises)
+    }
+    
+    // 使用全局OTP管理系统
     await accountsStore.initOTPSystem()
   } catch (error) {
     console.error('初始化失败:', error)
-    appStore.showNotification('error', '初始化失败')
+    appStore.showNotification('warning', '部分数据加载失败，请检查网络')
   }
 })
 

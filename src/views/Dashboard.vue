@@ -21,166 +21,235 @@
     </header>
 
     <main class="px-4 py-6 pt-20" @click="resetAllCards">
-      <!-- 统计卡片 -->
-      <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-600 font-medium">总账户数</p>
-              <p class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{{ accounts.length }}</p>
-            </div>
-            <div class="h-12 w-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Users class="h-6 w-6 text-white" />
-            </div>
+      <!-- 初始加载状态 -->
+      <div v-if="isLoadingInitial" class="flex flex-col items-center justify-center py-20 animate-fade-in">
+        <div class="relative mb-6">
+          <div class="w-16 h-16 rounded-full border-4 border-primary-100 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+          </div>
+          <div class="absolute -bottom-2 -right-2 bg-white rounded-lg p-1 shadow-md">
+            <RefreshCw class="w-4 h-4 text-primary-500 animate-spin" />
           </div>
         </div>
-        
-        <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-600 font-medium">分组数量</p>
-              <p class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{{ groups.length }}</p>
-            </div>
-            <div class="h-12 w-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Folder class="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </div>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">正在同步数据</h3>
+        <p class="text-gray-500 text-sm">连接到服务器中，请稍候...</p>
       </div>
 
-      <!-- 内容区版本的时间组件 -->
-      <GlobalOTPTimer 
-        v-if="accounts.length > 0" 
-        position="content" 
-        @visibility-change="onTimerVisibilityChange"
-      />
-
-      <!-- 分组筛选 -->
-      <div class="flex space-x-2 overflow-x-auto pb-4 mb-6" v-if="groups.length > 0">
-        <button
-          @click="setSelectedGroup(null)"
-          :class="[
-            'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
-            selectedGroupId === null
-              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
-              : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
-          ]"
-        >
-          全部 ({{ accounts.length }})
-        </button>
-        <button
-          v-for="group in groups"
-          :key="group.id"
-          @click="setSelectedGroup(group.id)"
-          :class="[
-            'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
-            selectedGroupId === group.id
-              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
-              : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
-          ]"
-        >
-          {{ group.name }}
-        </button>
-      </div>
-
-      <!-- 账户列表 -->
-      <div class="space-y-4">
-        <div v-if="filteredAccounts.length === 0" class="text-center py-12">
-          <div class="h-16 w-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Users class="h-8 w-8 text-gray-400" />
+      <!-- 连接错误状态 -->
+      <div v-else-if="initialLoadError" class="flex flex-col items-center justify-center py-12 px-4 animate-scale-up">
+        <div class="bg-red-50 rounded-3xl p-8 w-full max-sm border border-red-100 shadow-xl shadow-red-50 text-center">
+          <div class="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3">
+            <WifiOff class="w-10 h-10 text-red-600 -rotate-3" />
           </div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">暂无账户</h3>
-          <p class="text-gray-600 mb-6">添加您的第一个2FA账户开始使用</p>
-          <router-link to="/add-account" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-            添加账户
-          </router-link>
-        </div>
-
-        <div
-          v-for="account in filteredAccounts"
-          :key="account.id"
-          class="relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80"
-          @click="copyOTP(account)"
-          @touchstart="handleTouchStart($event, account)"
-          @touchmove="handleTouchMove($event, account)"
-          @touchend="handleTouchEnd($event, account)"
-          title="点击复制验证码，左滑编辑"
-        >
-          <!-- 隐藏的设置按钮 -->
-          <div 
-            :style="{ transform: `translateX(${getCardTransform(account.id) < -40 ? '0' : '100%'})` }"
-            class="absolute right-0 top-0 h-full w-20 bg-gradient-to-l from-primary-400 to-primary-600 flex items-center justify-center z-10 transition-transform duration-300 ease-out"
-          >
-            <button
-              @click.stop="editAccount(account)"
-              class="text-white p-3 rounded-lg hover:bg-white/20 transition-colors"
+          <h3 class="text-xl font-bold text-red-900 mb-3">连接服务器失败</h3>
+          <p class="text-red-700 text-sm mb-8 leading-relaxed">
+            无法连接到您的 2FAuth 服务器。这可能是由于：<br/>
+            - 服务器地址或 API 密钥已更改<br/>
+            - 服务器当前处于离线状态<br/>
+            - 您的网络连接存在故障
+          </p>
+          <div class="space-y-3">
+            <button 
+              @click="initializeData"
+              class="w-full py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200 active:scale-95"
             >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-              </svg>
+              重试连接
             </button>
+            <button 
+              @click="router.push('/settings')"
+              class="w-full py-4 bg-white border-2 border-red-100 text-red-600 rounded-2xl font-bold hover:bg-red-50 transition-all active:scale-95"
+            >
+              修改设置
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <template v-else>
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 font-medium">总账户数</p>
+                <p class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{{ accounts.length }}</p>
+              </div>
+              <div class="h-12 w-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Users class="h-6 w-6 text-white" />
+              </div>
+            </div>
           </div>
           
-          <!-- 主要内容区域 -->
-          <div 
-            :style="{ transform: `translateX(${getCardTransform(account.id)}px)` }"
-            class="bg-white/70 backdrop-blur-sm rounded-2xl p-[5vw] min-h-[24vw] transition-transform duration-300 ease-out relative z-20"
-          >
-          <div class="flex items-center space-x-[4vw] h-full">
-            <!-- 账户图标 - 响应式尺寸 -->
-            <AccountIcon :account="account" :size="'medium'" class="flex-shrink-0 w-[14vw] h-[14vw]" style="min-width: 52px; min-height: 52px; max-width: 72px; max-height: 72px;" />
-
-            <!-- 账户信息 -->
-            <div class="flex-1 min-w-0">
-              <h3 class="font-semibold text-gray-900 truncate text-[4.5vw]" style="font-size: clamp(18px, 4.5vw, 22px);">
-                {{ account.service || account.account || '未知服务' }}
-              </h3>
-              <p class="text-gray-600 truncate text-[3.5vw] mt-1" style="font-size: clamp(14px, 3.5vw, 18px);">
-                {{ account.account || account.service || '未知账户' }}
-              </p>
-            </div>
-
-            <!-- OTP显示区域 - 响应式 -->
-            <div class="text-right flex-shrink-0">
-              <div v-if="getAccountOTP(account.id)" class="space-y-1">
-                <div class="font-mono font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent text-[5.5vw]" style="font-size: clamp(20px, 5.5vw, 30px);">
-                  {{ formatOTP(getAccountOTP(account.id).otp_value) }}
-                </div>
+          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 font-medium">分组数量</p>
+                <p class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{{ groups.length }}</p>
               </div>
-              <div v-else-if="isGeneratingOTP" class="space-y-1">
-                <div class="text-gray-400 font-medium text-[4vw]" style="font-size: clamp(16px, 4vw, 20px);">
-                  正在生成...
-                </div>
-                <div class="flex items-center justify-end">
-                  <div class="w-[7vw] h-1 bg-gray-200 rounded-full animate-pulse" style="width: clamp(28px, 7vw, 36px);"></div>
-                </div>
-              </div>
-              <div v-else class="space-y-1">
-                <div class="text-gray-400 font-medium text-[4vw]" style="font-size: clamp(16px, 4vw, 20px);">
-                  暂无验证码
-                </div>
+              <div class="h-12 w-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Folder class="h-6 w-6 text-white" />
               </div>
             </div>
-
-            <!-- 复制按钮 - 响应式 -->
-            <button
-              @click.stop="copyOTP(account)"
-              :disabled="!getAccountOTP(account.id)"
-              class="p-[2vw] rounded-xl transition-all shadow-sm hover:shadow-md flex-shrink-0 w-[12vw] h-[12vw] flex items-center justify-center"
-              style="padding: clamp(10px, 2vw, 14px); min-width: 44px; min-height: 44px; max-width: 52px; max-height: 52px;"
-              :class="getAccountOTP(account.id) ? 'text-gray-400 hover:text-primary-600 hover:bg-primary-50' : 'text-gray-300 cursor-not-allowed'"
-              title="复制验证码"
-            >
-              <Copy class="w-[6vw] h-[6vw]" style="width: clamp(22px, 6vw, 26px); height: clamp(22px, 6vw, 26px);" />
-            </button>
-          </div>
           </div>
         </div>
-      </div>
+
+        <!-- 内容区版本的时间组件 -->
+        <GlobalOTPTimer 
+          v-if="accounts.length > 0" 
+          position="content" 
+          @visibility-change="onTimerVisibilityChange"
+        />
+
+        <!-- 分组筛选 -->
+        <div class="flex space-x-2 overflow-x-auto pb-4 mb-6" v-if="groups.length > 0">
+          <button
+            @click="setSelectedGroup(null)"
+            :class="[
+              'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
+              selectedGroupId === null
+                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
+                : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
+            ]"
+          >
+            全部 ({{ accounts.length }})
+          </button>
+          <button
+            v-for="group in groups"
+            :key="group.id"
+            @click="setSelectedGroup(group.id)"
+            :class="[
+              'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
+              selectedGroupId === group.id
+                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
+                : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
+            ]"
+          >
+            {{ group.name }}
+          </button>
+        </div>
+
+        <!-- 账户列表 -->
+        <div class="space-y-4">
+          <div v-if="filteredAccounts.length === 0" class="text-center py-12">
+            <div class="h-16 w-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Users class="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">暂无账户</h3>
+            <p class="text-gray-600 mb-6">添加您的第一个2FA账户开始使用</p>
+            <router-link to="/add-account" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+              添加账户
+            </router-link>
+          </div>
+
+          <div
+            v-for="account in filteredAccounts"
+            :key="account.id"
+            class="relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80"
+            @click="copyOTP(account)"
+            @touchstart="handleTouchStart($event, account)"
+            @touchmove="handleTouchMove($event, account)"
+            @touchend="handleTouchEnd($event, account)"
+          >
+            <!-- 隐藏的操作按钮 -->
+            <div 
+              :style="{ transform: `translateX(${getCardTransform(account.id) < -40 ? '0' : '100%'})` }"
+              class="absolute right-0 top-0 h-full w-40 flex items-center justify-end z-10 transition-transform duration-300 ease-out"
+            >
+              <button
+                @click.stop="editAccount(account)"
+                class="h-full w-20 bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 transition-colors"
+                title="编辑"
+              >
+                <Edit class="w-6 h-6" />
+              </button>
+              <button
+                @click.stop="deleteAccount(account)"
+                class="h-full w-20 bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-colors"
+              >
+                <Trash2 class="w-6 h-6" />
+              </button>
+            </div>
+            
+            <!-- 主要内容区域 -->
+            <div 
+              :style="{ transform: `translateX(${getCardTransform(account.id)}px)` }"
+              class="bg-white/70 backdrop-blur-sm rounded-2xl p-5 min-h-[100px] transition-transform duration-300 ease-out relative z-20"
+            >
+              <div class="flex items-center space-x-4 h-full">
+                <AccountIcon :account="account" size="medium" class="flex-shrink-0" />
+
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-semibold text-gray-900 truncate">
+                    {{ account.service || account.account || '未知服务' }}
+                  </h3>
+                  <p class="text-gray-600 truncate text-sm mt-1">
+                    {{ account.account || account.service || '未知账户' }}
+                  </p>
+                </div>
+
+                <div class="text-right flex-shrink-0">
+                  <div v-if="getAccountOTP(account.id)" class="space-y-1">
+                    <div class="font-mono font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent text-2xl">
+                      {{ formatOTP(getAccountOTP(account.id).otp_value) }}
+                    </div>
+                  </div>
+                  <div v-else-if="isGeneratingOTP" class="space-y-1">
+                    <div class="text-gray-400 font-medium text-sm">正在生成...</div>
+                    <div class="flex items-center justify-end">
+                      <div class="w-8 h-1 bg-gray-200 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                  <div v-else class="space-y-1">
+                    <div class="text-gray-400 font-medium text-sm">暂无验证码</div>
+                  </div>
+                </div>
+
+                <button
+                  @click.stop="copyOTP(account)"
+                  :disabled="!getAccountOTP(account.id)"
+                  class="p-2.5 rounded-xl transition-all shadow-sm hover:shadow-md flex-shrink-0"
+                  :class="getAccountOTP(account.id) ? 'text-gray-400 hover:text-primary-600 hover:bg-primary-50' : 'text-gray-300 cursor-not-allowed'"
+                >
+                  <Copy class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
     </main>
 
     <!-- 底部导航 -->
     <BottomTabBar />
+
+    <!-- 删除确认对话框 -->
+    <div v-if="accountToDelete" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-up">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle class="w-8 h-8 text-red-600" />
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">确认删除</h3>
+          <p class="text-gray-600 mb-6">
+            确定要删除账户 <span class="font-semibold text-gray-900">"{{ accountToDelete.service || accountToDelete.account }}"</span> 吗？此操作无法撤销。
+          </p>
+          <div class="flex space-x-3">
+            <button
+              @click="accountToDelete = null"
+              class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              @click="confirmDelete"
+              class="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+            >
+              确认删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -191,7 +260,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAppStore } from '@/stores/app'
 import {
-  Shield, Users, Folder, Copy
+  Shield, Users, Folder, Copy, Trash2, AlertTriangle, RefreshCw, WifiOff, Edit
 } from 'lucide-vue-next'
 import AccountIcon from '@/components/AccountIcon.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
@@ -208,9 +277,14 @@ const touchStartX = ref(0)
 const touchStartY = ref(0)
 const cardTransforms = ref({})
 const isDragging = ref(false)
-const dragThreshold = 50 // 滑动阈值
+const dragThreshold = 50 
+const accountToDelete = ref(null)
 
-// 内容区计时器可见性状态 - 初始设为true，避免不必要的动画
+// 加载状态
+const isLoadingInitial = ref(false)
+const initialLoadError = ref(false)
+
+// 内容区计时器可见性状态
 const contentTimerVisible = ref(true)
 
 // 初始化认证
@@ -235,18 +309,13 @@ const getAccountOTP = (accountId) => {
   return accountsStore.getAccountOTP(accountId)
 }
 
-// 处理内容区计时器可见性变化
 const onTimerVisibilityChange = (isVisible) => {
   contentTimerVisible.value = isVisible
 }
 
 const copyOTP = async (account) => {
-  // 如果正在拖拽，不执行复制
-  if (isDragging.value) {
-    return
-  }
+  if (isDragging.value) return
   
-  // 如果当前卡片已经滑出，先重置状态
   if (cardTransforms.value[account.id] && cardTransforms.value[account.id] < 0) {
     cardTransforms.value[account.id] = 0
     return
@@ -256,29 +325,38 @@ const copyOTP = async (account) => {
   if (otp && otp.otp_value) {
     try {
       await navigator.clipboard.writeText(otp.otp_value.toString())
-      appStore.showNotification('success', `验证码 ${formatOTP(otp.otp_value)} 已复制到剪贴板`)
+      appStore.showNotification('success', `验证码 ${formatOTP(otp.otp_value)} 已复制`)
     } catch (error) {
       appStore.showNotification('error', '复制失败')
-    }
-  } else {
-    // 没有验证码时的处理，可以选择不显示提示或显示生成中提示
-    if (isGeneratingOTP.value) {
-      appStore.showNotification('info', '验证码正在生成中...')
     }
   }
 }
 
-// 编辑账户
 const editAccount = (account) => {
+  resetAllCards()
   router.push(`/edit-account/${account.id}`)
 }
 
-// 获取卡片变换值
+const deleteAccount = (account) => {
+  accountToDelete.value = account
+}
+
+const confirmDelete = async () => {
+  if (!accountToDelete.value) return
+  try {
+    await accountsStore.deleteAccount(accountToDelete.value.id)
+    appStore.showNotification('success', '账户已删除')
+    accountToDelete.value = null
+    resetAllCards()
+  } catch (error) {
+    appStore.showNotification('error', '删除失败')
+  }
+}
+
 const getCardTransform = (accountId) => {
   return cardTransforms.value[accountId] || 0
 }
 
-// 滑动处理
 const handleTouchStart = (event, account) => {
   const touch = event.touches[0]
   touchStartX.value = touch.clientX
@@ -288,20 +366,15 @@ const handleTouchStart = (event, account) => {
 
 const handleTouchMove = (event, account) => {
   if (!event.touches[0]) return
-  
   const touch = event.touches[0]
   const deltaX = touch.clientX - touchStartX.value
   const deltaY = touch.clientY - touchStartY.value
   
-  // 判断是否为水平滑动
   if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
     isDragging.value = true
     event.preventDefault()
-    
-    // 只允许向左滑动
     if (deltaX < 0) {
-      const transform = Math.max(deltaX, -80) // 最大滑动80px
-      cardTransforms.value[account.id] = transform
+      cardTransforms.value[account.id] = Math.max(deltaX, -160)
     } else {
       cardTransforms.value[account.id] = 0
     }
@@ -309,74 +382,45 @@ const handleTouchMove = (event, account) => {
 }
 
 const handleTouchEnd = (event, account) => {
-  if (!isDragging.value) {
-    // 如果不是拖拽，则执行点击复制
-    return
-  }
-  
+  if (!isDragging.value) return
   const currentTransform = cardTransforms.value[account.id] || 0
-  
-  // 如果滑动距离超过阈值，保持显示设置按钮
   if (Math.abs(currentTransform) > dragThreshold) {
-    cardTransforms.value[account.id] = -80
+    cardTransforms.value[account.id] = -160
   } else {
-    // 否则回弹
     cardTransforms.value[account.id] = 0
   }
-  
   isDragging.value = false
 }
 
-// 重置所有卡片状态
 const resetAllCards = () => {
   cardTransforms.value = {}
 }
 
-onMounted(async () => {
+const initializeData = async () => {
   try {
-    // 显示加载状态但不阻塞UI
-    const loadingPromises = []
-    
-    // 并行执行数据获取和OTP初始化
-    if (accountsStore.accounts.length === 0) {
-      console.log('首次加载，获取账户数据...')
-      loadingPromises.push(accountsStore.fetchAccounts())
-    }
-    
-    if (accountsStore.groups.length === 0) {
-      loadingPromises.push(accountsStore.fetchGroups())
-    }
-    
-    // 等待基础数据加载完成
-    await Promise.all(loadingPromises)
-    
-    // 延迟一下让DOM渲染完成，然后设置初始可见性状态
+    isLoadingInitial.value = true
+    initialLoadError.value = false
+    const fetchOptions = { timeout: 3000 }
+    await Promise.all([
+      accountsStore.fetchAccounts(true, true, fetchOptions),
+      accountsStore.fetchGroups(true, true, fetchOptions)
+    ])
+    await accountsStore.initOTPSystem()
     await nextTick()
-    setTimeout(() => {
-      // 如果页面有内容区计时器，让它先检测一次可见性
-      // 这样可以避免从其他页面回来时的不必要动画
-      if (accounts.value.length > 0) {
-        // 初始状态假设内容区可见
-        contentTimerVisible.value = true
-      }
-    }, 100)
-    
-    // 异步初始化OTP系统，不阻塞界面显示
-    accountsStore.initOTPSystem().catch(error => {
-      console.error('OTP系统初始化失败:', error)
-      appStore.showNotification('warning', 'OTP初始化失败，请手动刷新')
-    })
-    
+    if (accounts.value.length > 0) contentTimerVisible.value = true
   } catch (error) {
-    console.error('初始化失败:', error)
-    appStore.showNotification('error', '加载失败，请重试')
+    console.error('Initial load failed:', error)
+    initialLoadError.value = true
+  } finally {
+    isLoadingInitial.value = false
   }
+}
+
+onMounted(() => {
+  initializeData()
 })
 
 onUnmounted(() => {
-  // OTP系统由store全局管理，这里不需要清理
-  if (longPressTimer) {
-    clearTimeout(longPressTimer)
-  }
+  // Cleanup managed by store
 })
 </script>

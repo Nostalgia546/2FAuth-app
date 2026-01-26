@@ -34,6 +34,7 @@
                 class="input-field pl-10"
                 placeholder="https://your-2fauth-server.com"
                 :disabled="isLoading"
+                @dblclick="$event.target.select()"
               />
             </div>
           </div>
@@ -55,6 +56,7 @@
                 class="input-field pl-10 pr-10"
                 placeholder="输入您的API密钥"
                 :disabled="isLoading"
+                @dblclick="$event.target.select()"
               />
               <button
                 type="button"
@@ -122,12 +124,17 @@ const handleLogin = async () => {
     appStore.showNotification('success', '登录成功！')
     router.push('/dashboard')
   } catch (error) {
-    let errorMessage = '登录失败，请检查服务器地址和API密钥'
+    console.error('Login error:', error)
+    let errorMessage = error.message || '登录失败，请检查服务器设置'
     
     if (error.response?.status === 401) {
-      errorMessage = 'API密钥无效，请检查后重试'
-    } else if (error.code === 'NETWORK_ERROR') {
-      errorMessage = '无法连接到服务器，请检查地址是否正确'
+      errorMessage = 'API密钥无效，请登录 2FAuth 网页版生成正确的令牌'
+    } else if (error.code === 'INVALID_URL') {
+      errorMessage = '服务器地址格式错误，必须以 http:// 或 https:// 开头'
+    } else if (error.code === 'TIMEOUT' || error.code === 'ECONNABORTED') {
+      errorMessage = '连接服务器超时，请确认地址无误且服务器在线'
+    } else if (error.message === 'Network Error') {
+      errorMessage = '网络连接错误，请检查网络设置或服务器地址'
     }
     
     appStore.showNotification('error', errorMessage)

@@ -5,6 +5,7 @@
         v-for="tab in tabs"
         :key="tab.name"
         :to="tab.path"
+        replace
         class="relative flex flex-col items-center py-2 px-4 rounded-2xl transition-all duration-300 group min-w-0 flex-1"
         :class="isActive(tab.path) ? 'transform scale-105' : 'hover:scale-105'"
       >

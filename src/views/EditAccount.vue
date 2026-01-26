@@ -37,40 +37,96 @@
           
           <div class="flex items-center space-x-6">
             <div class="flex-shrink-0">
-              <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-lg">
+              <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-lg overflow-hidden">
                 <AccountIcon :account="formData" size="large" :key="iconKey" />
               </div>
             </div>
             <div class="flex-1 space-y-3">
-              <!-- 上传图标 -->
-              <label class="flex items-center justify-center w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                <Upload class="w-5 h-5 mr-2" />
-                <span class="font-medium">上传图标</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  @change="handleIconUpload"
-                  class="hidden"
-                />
-              </label>
+              <!-- 选择图标按钮 -->
+              <button
+                type="button"
+                @click="toggleIconPicker"
+                class="flex items-center justify-center w-full py-3 px-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                <Image class="w-5 h-5 mr-2" />
+                <span>选择图标</span>
+              </button>
               
-              <!-- 操作按钮 -->
+              <!-- 上传与清空 -->
               <div class="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  @click="autoGetIcon"
-                  class="flex items-center justify-center py-2.5 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-medium hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
-                >
-                  <Download class="w-4 h-4 mr-2" />
-                  获取
-                </button>
+                <label class="flex items-center justify-center py-2.5 px-4 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all cursor-pointer shadow-sm">
+                  <Upload class="w-4 h-4 mr-2" />
+                  上传
+                  <input type="file" accept="image/*" @change="handleIconUpload" class="hidden" />
+                </label>
                 <button
                   type="button"
                   @click="clearIcon"
-                  class="flex items-center justify-center py-2.5 px-4 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-medium hover:from-gray-600 hover:to-gray-700 transition-all shadow-md hover:shadow-lg"
+                  class="flex items-center justify-center py-2.5 px-4 bg-white border border-gray-200 text-red-600 rounded-xl font-medium hover:bg-red-50 hover:border-red-100 transition-all shadow-sm"
                 >
                   <X class="w-4 h-4 mr-2" />
                   清空
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 图标选择器面板 -->
+          <div v-if="showIconPicker" class="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-100 animate-fade-in">
+            <!-- 图标来源切换 -->
+            <div class="flex p-1 bg-gray-200/50 rounded-xl mb-4">
+              <button 
+                type="button"
+                @click="iconSource = 'predefined'"
+                class="flex-1 py-2 text-xs font-semibold rounded-lg transition-all"
+                :class="iconSource === 'predefined' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'"
+              >
+                精选图标
+              </button>
+              <button 
+                type="button"
+                @click="iconSource = 'server'"
+                class="flex-1 py-2 text-xs font-semibold rounded-lg transition-all"
+                :class="iconSource === 'server' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500'"
+              >
+                服务器图标
+              </button>
+            </div>
+
+            <!-- 精选图标 -->
+            <div v-if="iconSource === 'predefined'" class="space-y-3">
+              <div class="grid grid-cols-5 gap-3">
+                <button
+                  v-for="icon in predefinedIcons"
+                  :key="icon.name"
+                  type="button"
+                  @click="selectIcon(icon.value)"
+                  class="p-2 rounded-xl border-2 transition-all hover:border-primary-300 bg-white"
+                  :class="formData.icon === icon.value ? 'border-primary-500 shadow-inner' : 'border-transparent shadow-sm'"
+                >
+                  <img :src="icon.value" :alt="icon.name" class="w-8 h-8 mx-auto" />
+                </button>
+              </div>
+            </div>
+
+            <!-- 服务器已有图标 -->
+            <div v-if="iconSource === 'server'">
+              <div v-if="isFetchingIcons" class="flex justify-center py-8">
+                <div class="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+              </div>
+              <div v-else-if="serverIcons.length === 0" class="text-center py-8 text-gray-500 text-sm">
+                服务器上暂无图标
+              </div>
+              <div v-else class="grid grid-cols-5 gap-3 max-h-60 overflow-y-auto p-1">
+                <button
+                  v-for="icon in serverIcons"
+                  :key="icon"
+                  type="button"
+                  @click="selectIcon(icon)"
+                  class="p-2 rounded-xl border-2 transition-all hover:border-primary-300 bg-white"
+                  :class="formData.icon === icon ? 'border-primary-500 shadow-inner' : 'border-transparent shadow-sm'"
+                >
+                  <img :src="accountsStore.getIconUrl(icon)" class="w-10 h-10 mx-auto object-contain rounded-lg" />
                 </button>
               </div>
             </div>
@@ -93,6 +149,7 @@
             required
             class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium shadow-sm focus:shadow-md"
             placeholder="例如：Google、GitHub、Microsoft"
+            @dblclick="$event.target.select()"
           />
         </div>
 
@@ -112,6 +169,7 @@
             required
             class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium shadow-sm focus:shadow-md"
             placeholder="例如：your@email.com"
+            @dblclick="$event.target.select()"
           />
         </div>
 
@@ -191,6 +249,9 @@ const appStore = useAppStore()
 const account = ref(null)
 const isLoading = ref(true)
 const isSaving = ref(false)
+const showIconPicker = ref(false)
+const iconSource = ref('predefined')
+const isFetchingIcons = ref(false)
 const iconKey = ref(0)
 
 const formData = reactive({
@@ -199,6 +260,22 @@ const formData = reactive({
   group_id: '',
   icon: null
 })
+
+const serverIcons = computed(() => accountsStore.icons)
+
+// 预定义图标列表
+const predefinedIcons = [
+  { name: 'Google', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/google.svg' },
+  { name: 'GitHub', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/github.svg' },
+  { name: 'Microsoft', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/microsoft.svg' },
+  { name: 'Apple', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/apple.svg' },
+  { name: 'Amazon', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/amazon.svg' },
+  { name: 'Facebook', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/facebook.svg' },
+  { name: 'Twitter', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/twitter.svg' },
+  { name: 'Discord', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/discord.svg' },
+  { name: 'Steam', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/steam.svg' },
+  { name: 'Telegram', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/telegram.svg' }
+]
 
 const groups = computed(() => accountsStore.groups)
 
@@ -399,6 +476,24 @@ const autoGetIcon = async () => {
   } catch (error) {
     console.error('自动获取图标失败:', error)
     appStore.showNotification('error', '自动获取图标失败')
+  }
+}
+
+const selectIcon = (iconValue) => {
+  formData.icon = iconValue
+  iconKey.value++
+  showIconPicker.value = false
+}
+
+const toggleIconPicker = async () => {
+  showIconPicker.value = !showIconPicker.value
+  if (showIconPicker.value && serverIcons.value.length === 0) {
+    try {
+      isFetchingIcons.value = true
+      await accountsStore.fetchIcons()
+    } finally {
+      isFetchingIcons.value = false
+    }
   }
 }
 
