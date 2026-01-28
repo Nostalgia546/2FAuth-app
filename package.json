@@ -1,6 +1,6 @@
 {
   "name": "2fauth-vue-app",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "2FAuth管理应用 - Vue3移动端",
   "scripts": {
     "dev": "vite",
