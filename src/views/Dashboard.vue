@@ -100,12 +100,12 @@
           @visibility-change="onTimerVisibilityChange"
         />
 
-        <div class="flex space-x-2 overflow-x-auto pb-4 mb-2 no-scrollbar scroll-smooth" v-if="groups.length > 0 || accounts.length > 0">
+        <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar touch-pan-x overscroll-x-contain h-16 py-1 mb-2 flex-nowrap" style="-webkit-overflow-scrolling: touch;" v-if="groups.length > 0 || accounts.length > 0">
           <!-- 还原自定义的 全部 按钮 -->
           <button
             @click="setSelectedGroup(null)"
             :class="[
-              'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none',
+              'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none flex-shrink-0 origin-left',
               selectedGroupId === null
                 ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-primary-200 scale-105 z-10'
                 : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200/50'
@@ -119,11 +119,12 @@
               v-if="!['所有账户', '所有账号', 'All accounts'].includes(group.name)"
               @click="handleGroupClick(group)"
               @touchstart="handleGroupLongPressStart($event, group)"
+              @touchmove="handleGroupLongPressEnd"
               @touchend="handleGroupLongPressEnd"
               @mousedown="handleGroupLongPressStart($event, group)"
               @mouseup="handleGroupLongPressEnd"
               :class="[
-                'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none',
+                'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none flex-shrink-0',
                 selectedGroupId === group.id
                   ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-primary-200 scale-105 z-10'
                   : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200/50'
@@ -135,7 +136,7 @@
           
           <button
             @click="showCreateGroupModal = true"
-            class="px-4 py-2 rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200 transition-all shadow-sm flex items-center justify-center min-w-[44px]"
+            class="px-5 py-2.5 rounded-2xl bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200 transition-all shadow-sm flex items-center justify-center min-w-[50px] flex-shrink-0 mr-4"
             title="快捷创建分组"
           >
             <Plus class="h-5 w-5" />
