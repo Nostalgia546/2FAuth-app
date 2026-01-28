@@ -538,11 +538,15 @@ export const useAccountsStore = defineStore('accounts', () => {
   const reorderAccounts = async (orderedIds) => {
     try {
       await api.post('/api/v1/twofaccounts/reorder', { orderedIds })
-      await fetchAccounts()
+
+      // 同步本地顺序：根据 orderedIds 重新排列本地账户数组
+      const accountsMap = new Map(accounts.value.map(acc => [acc.id, acc]))
+      accounts.value = orderedIds.map(id => accountsMap.get(id)).filter(Boolean)
+
       appStore.showNotification('success', '账户顺序已更新')
     } catch (error) {
       console.error('重新排序失败:', error)
-      appStore.showNotification('error', '更新账户顺序失败')
+      appStore.showNotification('error', '保存排序失败')
       throw error
     }
   }

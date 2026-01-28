@@ -100,121 +100,196 @@
           @visibility-change="onTimerVisibilityChange"
         />
 
-        <!-- 分组筛选 -->
-        <div class="flex space-x-2 overflow-x-auto pb-4 mb-6" v-if="groups.length > 0">
+        <div class="flex space-x-2 overflow-x-auto pb-4 mb-2 no-scrollbar scroll-smooth" v-if="groups.length > 0 || accounts.length > 0">
+          <!-- 还原自定义的 全部 按钮 -->
           <button
             @click="setSelectedGroup(null)"
             :class="[
-              'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
+              'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none',
               selectedGroupId === null
-                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
-                : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
+                ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-primary-200 scale-105 z-10'
+                : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200/50'
             ]"
           >
             全部 ({{ accounts.length }})
           </button>
+
+          <template v-for="group in groups" :key="group.id">
+            <button
+              v-if="!['所有账户', '所有账号', 'All accounts'].includes(group.name)"
+              @click="handleGroupClick(group)"
+              @touchstart="handleGroupLongPressStart($event, group)"
+              @touchend="handleGroupLongPressEnd"
+              @mousedown="handleGroupLongPressStart($event, group)"
+              @mouseup="handleGroupLongPressEnd"
+              :class="[
+                'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none',
+                selectedGroupId === group.id
+                  ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-primary-200 scale-105 z-10'
+                  : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200/50'
+              ]"
+            >
+              {{ group.name }} ({{ getGroupAccountCount(group.id) }})
+            </button>
+          </template>
+          
           <button
-            v-for="group in groups"
-            :key="group.id"
-            @click="setSelectedGroup(group.id)"
-            :class="[
-              'px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap shadow-sm',
-              selectedGroupId === group.id
-                ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-primary-200'
-                : 'bg-white/70 text-gray-600 hover:bg-white/80 border border-gray-200'
-            ]"
+            @click="showCreateGroupModal = true"
+            class="px-4 py-2 rounded-xl bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200 transition-all shadow-sm flex items-center justify-center min-w-[44px]"
+            title="快捷创建分组"
           >
-            {{ group.name }}
+            <Plus class="h-5 w-5" />
           </button>
         </div>
 
         <!-- 账户列表 -->
         <div class="space-y-4">
-          <div v-if="filteredAccounts.length === 0" class="text-center py-12">
-            <div class="h-16 w-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Users class="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">暂无账户</h3>
-            <p class="text-gray-600 mb-6">添加您的第一个2FA账户开始使用</p>
-            <router-link to="/add-account" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-              添加账户
-            </router-link>
+          <div v-if="filteredAccounts.length === 0" class="text-center py-12 px-4">
+            <!-- 全部账户为空 -->
+            <template v-if="selectedGroupId === null">
+              <div class="h-16 w-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Users class="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">暂无账户</h3>
+              <p class="text-gray-600 mb-6">添加您的第一个2FA账户开始使用</p>
+              <router-link to="/add-account" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                添加账户
+              </router-link>
+            </template>
+            <!-- 选中的分组为空 -->
+            <template v-else>
+              <div class="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-gray-300">
+                <Folder class="h-8 w-8 text-gray-300" />
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">该分组下没有账户</h3>
+              <p class="text-gray-500 mb-6 font-medium">您可以编辑账户并将其分配到此分组中</p>
+            </template>
           </div>
 
-          <div
-            v-for="account in filteredAccounts"
-            :key="account.id"
-            class="relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80"
-            @click="copyOTP(account)"
-            @touchstart="handleTouchStart($event, account)"
-            @touchmove="handleTouchMove($event, account)"
-            @touchend="handleTouchEnd($event, account)"
-          >
-            <!-- 隐藏的操作按钮 -->
-            <div 
-              :style="{ transform: `translateX(${getCardTransform(account.id) < -40 ? '0' : '100%'})` }"
-              class="absolute right-0 top-0 h-full w-40 flex items-center justify-end z-10 transition-transform duration-300 ease-out"
+          <TransitionGroup name="list" tag="div" class="space-y-4">
+            <div
+              v-for="account in displayAccounts"
+              :key="account.id"
+              :class="[
+                'relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-lg hover:shadow-xl transition-all cursor-pointer hover:bg-white/80',
+                isSortMode ? 'ring-2 ring-primary-500 shadow-primary-100 scale-[0.98]' : (longPressingId === account.id ? 'scale-[0.98] bg-gray-50' : '')
+              ]"
+              @click="copyOTP(account)"
+              @touchstart="handleTouchStart($event, account)"
+              @touchmove="handleTouchMove($event, account)"
+              @touchend="handleTouchEnd($event, account)"
+              @mousedown="handleMouseDown($event, account)"
+              @mouseup="handleMouseUp"
+              @mouseleave="handleMouseUp"
             >
-              <button
-                @click.stop="editAccount(account)"
-                class="h-full w-20 bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 transition-colors"
-                title="编辑"
+              <!-- 隐藏的操作按钮 -->
+              <div 
+                :style="{ transform: `translateX(${getCardTransform(account.id) < -40 ? '0' : '100%'})` }"
+                class="absolute right-0 top-0 h-full w-40 flex items-center justify-end z-10 transition-transform duration-300 ease-out"
               >
-                <Edit class="w-6 h-6" />
-              </button>
-              <button
-                @click.stop="deleteAccount(account)"
-                class="h-full w-20 bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-colors"
-              >
-                <Trash2 class="w-6 h-6" />
-              </button>
-            </div>
-            
-            <!-- 主要内容区域 -->
-            <div 
-              :style="{ transform: `translateX(${getCardTransform(account.id)}px)` }"
-              class="bg-white/70 backdrop-blur-sm rounded-2xl p-5 min-h-[100px] transition-transform duration-300 ease-out relative z-20"
-            >
-              <div class="flex items-center space-x-4 h-full">
-                <AccountIcon :account="account" size="medium" class="flex-shrink-0" />
-
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-semibold text-gray-900 truncate">
-                    {{ account.service || account.account || '未知服务' }}
-                  </h3>
-                  <p class="text-gray-600 truncate text-sm mt-1">
-                    {{ account.account || account.service || '未知账户' }}
-                  </p>
-                </div>
-
-                <div class="text-right flex-shrink-0">
-                  <div v-if="getAccountOTP(account.id)" class="space-y-1">
-                    <div class="font-mono font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent text-2xl">
-                      {{ formatOTP(getAccountOTP(account.id).otp_value) }}
-                    </div>
-                  </div>
-                  <div v-else-if="isGeneratingOTP" class="space-y-1">
-                    <div class="text-gray-400 font-medium text-sm">正在生成...</div>
-                    <div class="flex items-center justify-end">
-                      <div class="w-8 h-1 bg-gray-200 rounded-full animate-pulse"></div>
-                    </div>
-                  </div>
-                  <div v-else class="space-y-1">
-                    <div class="text-gray-400 font-medium text-sm">暂无验证码</div>
-                  </div>
-                </div>
-
                 <button
-                  @click.stop="copyOTP(account)"
-                  :disabled="!getAccountOTP(account.id)"
-                  class="p-2.5 rounded-xl transition-all shadow-sm hover:shadow-md flex-shrink-0"
-                  :class="getAccountOTP(account.id) ? 'text-gray-400 hover:text-primary-600 hover:bg-primary-50' : 'text-gray-300 cursor-not-allowed'"
+                  @click.stop="editAccount(account)"
+                  class="h-full w-20 bg-primary-600 text-white flex items-center justify-center hover:bg-primary-700 transition-colors"
+                  title="编辑"
                 >
-                  <Copy class="w-5 h-5" />
+                  <Edit class="w-6 h-6" />
+                </button>
+                <button
+                  @click.stop="deleteAccount(account)"
+                  class="h-full w-20 bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 class="w-6 h-6" />
                 </button>
               </div>
+              
+              <!-- 主要内容区域 -->
+              <div 
+                :style="{ transform: `translateX(${isSortMode ? 0 : getCardTransform(account.id)}px)` }"
+                class="bg-white/70 backdrop-blur-sm rounded-2xl p-5 min-h-[100px] transition-transform duration-300 ease-out relative z-20"
+              >
+                <div class="flex items-center space-x-4 h-full">
+                  <!-- 排序模式下的移动控制 -->
+                  <div v-if="isSortMode" class="flex flex-col space-y-2 mr-2">
+                    <button 
+                      @click.stop="moveAccount(account, 'up')"
+                      :disabled="isFirst(account)"
+                      class="p-1 rounded-md hover:bg-gray-100 disabled:opacity-20 transition-colors"
+                    >
+                      <ChevronUp class="w-5 h-5 text-gray-600" />
+                    </button>
+                    <button 
+                      @click.stop="moveAccount(account, 'down')"
+                      :disabled="isLast(account)"
+                      class="p-1 rounded-md hover:bg-gray-100 disabled:opacity-20 transition-colors"
+                    >
+                      <ChevronDownIcon class="w-5 h-5 text-gray-600" />
+                    </button>
+                  </div>
+
+                  <AccountIcon :account="account" size="medium" class="flex-shrink-0" />
+
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-semibold text-gray-900 truncate">
+                      {{ account.service || account.account || '未知服务' }}
+                    </h3>
+                    <p class="text-gray-600 truncate text-sm mt-1">
+                      {{ account.account || account.service || '未知账户' }}
+                    </p>
+                  </div>
+
+                  <div v-if="!isSortMode" class="text-right flex-shrink-0">
+                    <div v-if="getAccountOTP(account.id)" class="space-y-1">
+                      <div class="font-mono font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent text-2xl">
+                        {{ formatOTP(getAccountOTP(account.id).otp_value) }}
+                      </div>
+                    </div>
+                    <div v-else-if="isGeneratingOTP" class="space-y-1">
+                      <div class="text-gray-400 font-medium text-sm">正在生成...</div>
+                      <div class="flex items-center justify-end">
+                        <div class="w-8 h-1 bg-gray-200 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                    <div v-else class="space-y-1">
+                      <div class="text-gray-400 font-medium text-sm">暂无验证码</div>
+                    </div>
+                  </div>
+
+                  <button
+                    v-if="!isSortMode"
+                    @click.stop="copyOTP(account)"
+                    :disabled="!getAccountOTP(account.id)"
+                    class="p-2.5 rounded-xl transition-all shadow-sm hover:shadow-md flex-shrink-0"
+                    :class="getAccountOTP(account.id) ? 'text-gray-400 hover:text-primary-600 hover:bg-primary-50' : 'text-gray-300 cursor-not-allowed'"
+                  >
+                    <Copy class="w-5 h-5" />
+                  </button>
+
+                  <!-- 排序模式下的手柄图标 -->
+                  <div v-else class="text-gray-300">
+                    <GripVertical class="w-6 h-6" />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </TransitionGroup>
+        </div>
+
+        <!-- 排序模式下的操作栏 -->
+        <div v-if="isSortMode" class="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center space-x-4 bg-white/90 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-gray-200 z-50 animate-bounce-in w-max">
+          <button 
+            @click="cancelSort"
+            class="flex items-center space-x-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all active:scale-95 whitespace-nowrap min-w-fit"
+          >
+            <X class="w-5 h-5" />
+            <span>取消</span>
+          </button>
+          <button 
+            @click="saveSort"
+            class="flex items-center space-x-2 px-6 py-3 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-200 active:scale-95 whitespace-nowrap min-w-fit"
+          >
+            <Check class="w-5 h-5" />
+            <span>保存顺序</span>
+          </button>
         </div>
       </template>
     </main>
@@ -250,6 +325,69 @@
         </div>
       </div>
     </div>
+
+    <!-- 分组删除确认对话框 -->
+    <div v-if="groupToDeleteConfirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-up text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Trash2 class="w-8 h-8 text-red-600" />
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">删除分组</h3>
+        <p class="text-gray-600 mb-6">
+          确认要删除分组 <span class="font-semibold text-gray-900">"{{ groupToDeleteConfirm.name }}"</span> 吗？<br/>
+          <span class="text-sm text-red-500 mt-2 block">此操作仅删除分组分类，不会删除账号。</span>
+        </p>
+        <div class="flex space-x-3">
+          <button
+            @click="groupToDeleteConfirm = null"
+            class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all"
+          >
+            取消
+          </button>
+          <button
+            @click="confirmDeleteGroup"
+            class="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200"
+          >
+            确认删除
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 快捷创建分组对话框 -->
+    <div v-if="showCreateGroupModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-up">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">创建新分组</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">分组名称</label>
+            <input
+              v-model="newGroupName"
+              type="text"
+              class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+              placeholder="例如：社交、工作、理财"
+              autofocus
+              @keyup.enter="handleCreateGroup"
+            />
+          </div>
+          <div class="flex space-x-3 pt-2">
+            <button
+              @click="showCreateGroupModal = false; newGroupName = ''"
+              class="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all transition-all shadow-sm"
+            >
+              取消
+            </button>
+            <button
+              @click="handleCreateGroup"
+              :disabled="!newGroupName.trim() || isCreatingGroup"
+              class="flex-1 py-3 px-4 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-200 disabled:opacity-50"
+            >
+              {{ isCreatingGroup ? '创建中...' : '确认创建' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -260,7 +398,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAppStore } from '@/stores/app'
 import {
-  Shield, Users, Folder, Copy, Trash2, AlertTriangle, RefreshCw, WifiOff, Edit
+  Shield, Users, Folder, Copy, Trash2, AlertTriangle, RefreshCw, WifiOff, Edit,
+  Plus, ArrowDownUp, Check, X, ChevronUp, ChevronDown as ChevronDownIcon, GripVertical
 } from 'lucide-vue-next'
 import AccountIcon from '@/components/AccountIcon.vue'
 import BottomTabBar from '@/components/BottomTabBar.vue'
@@ -280,6 +419,20 @@ const isDragging = ref(false)
 const dragThreshold = 50 
 const accountToDelete = ref(null)
 
+// 排序相关状态
+const isSortMode = ref(false)
+const sortList = ref([])
+const longPressTimer = ref(null)
+const longPressingId = ref(null)
+const LONG_PRESS_DURATION = 600
+
+// 分组弹窗与管理
+const showCreateGroupModal = ref(false)
+const newGroupName = ref('')
+const isCreatingGroup = ref(false)
+const groupToDeleteConfirm = ref(null)
+const groupLongPressTimer = ref(null)
+
 // 加载状态
 const isLoadingInitial = ref(false)
 const initialLoadError = ref(false)
@@ -297,7 +450,59 @@ const selectedGroupId = computed(() => accountsStore.selectedGroupId)
 const isGeneratingOTP = computed(() => accountsStore.isGeneratingOTP)
 
 const setSelectedGroup = (groupId) => {
+  if (isSortMode.value) return
   accountsStore.setSelectedGroup(groupId)
+}
+
+const displayAccounts = computed(() => {
+  return isSortMode.value ? sortList.value : filteredAccounts.value
+})
+
+const enterSortMode = () => {
+  if (selectedGroupId.value !== null) return
+  isSortMode.value = true
+  sortList.value = [...accounts.value]
+}
+
+const cancelSort = () => {
+  isSortMode.value = false
+  sortList.value = []
+}
+
+const saveSort = async () => {
+  try {
+    appStore.setLoading(true)
+    const orderedIds = sortList.value.map(acc => acc.id)
+    await accountsStore.reorderAccounts(orderedIds)
+    isSortMode.value = false
+    sortList.value = []
+  } catch (error) {
+    console.error('Save sort failed:', error)
+  } finally {
+    appStore.setLoading(false)
+  }
+}
+
+const moveAccount = (account, direction) => {
+  const index = sortList.value.findIndex(acc => acc.id === account.id)
+  if (index === -1) return
+  
+  const newList = [...sortList.value]
+  if (direction === 'up' && index > 0) {
+    [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]]
+  } else if (direction === 'down' && index < newList.length - 1) {
+    [newList[index + 1], newList[index]] = [newList[index], newList[index + 1]]
+  }
+  sortList.value = newList
+}
+
+const isFirst = (account) => {
+  return sortList.value.findIndex(acc => acc.id === account.id) === 0
+}
+
+const isLast = (account) => {
+  const index = sortList.value.findIndex(acc => acc.id === account.id)
+  return index === sortList.value.length - 1
 }
 
 const formatOTP = (otp) => {
@@ -314,7 +519,7 @@ const onTimerVisibilityChange = (isVisible) => {
 }
 
 const copyOTP = async (account) => {
-  if (isDragging.value) return
+  if (isDragging.value || isSortMode.value) return
   
   if (cardTransforms.value[account.id] && cardTransforms.value[account.id] < 0) {
     cardTransforms.value[account.id] = 0
@@ -358,10 +563,52 @@ const getCardTransform = (accountId) => {
 }
 
 const handleTouchStart = (event, account) => {
+  if (isSortMode.value) return
+  
   const touch = event.touches[0]
   touchStartX.value = touch.clientX
   touchStartY.value = touch.clientY
   isDragging.value = false
+
+  // 长按开始
+  longPressingId.value = account.id
+  longPressTimer.value = setTimeout(() => {
+    startLongPress(account)
+  }, LONG_PRESS_DURATION)
+}
+
+const handleMouseDown = (event, account) => {
+  if (isSortMode.value) return
+  longPressingId.value = account.id
+  longPressTimer.value = setTimeout(() => {
+    startLongPress(account)
+  }, LONG_PRESS_DURATION)
+}
+
+const handleMouseUp = () => {
+  clearLongPress()
+}
+
+const startLongPress = (account) => {
+  if (selectedGroupId.value !== null) {
+    appStore.showNotification('info', '请在“全部”分组下进行排序')
+    return
+  }
+  
+  if (window.navigator && window.navigator.vibrate) {
+    window.navigator.vibrate(50)
+  }
+  
+  enterSortMode()
+  appStore.showNotification('info', '已进入排序模式')
+}
+
+const clearLongPress = () => {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+  longPressingId.value = null
 }
 
 const handleTouchMove = (event, account) => {
@@ -370,10 +617,14 @@ const handleTouchMove = (event, account) => {
   const deltaX = touch.clientX - touchStartX.value
   const deltaY = touch.clientY - touchStartY.value
   
+  if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+    clearLongPress()
+  }
+
   if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
     isDragging.value = true
     event.preventDefault()
-    if (deltaX < 0) {
+    if (deltaX < 0 && !isSortMode.value) {
       cardTransforms.value[account.id] = Math.max(deltaX, -160)
     } else {
       cardTransforms.value[account.id] = 0
@@ -382,6 +633,7 @@ const handleTouchMove = (event, account) => {
 }
 
 const handleTouchEnd = (event, account) => {
+  clearLongPress()
   if (!isDragging.value) return
   const currentTransform = cardTransforms.value[account.id] || 0
   if (Math.abs(currentTransform) > dragThreshold) {
@@ -397,6 +649,8 @@ const resetAllCards = () => {
 }
 
 const initializeData = async () => {
+  if (isLoadingInitial.value) return // 如果已经在加载了，直接返回
+  
   try {
     isLoadingInitial.value = true
     initialLoadError.value = false
@@ -416,6 +670,67 @@ const initializeData = async () => {
   }
 }
 
+const handleGroupClick = (group) => {
+  if (isSortMode.value) return
+  accountsStore.setSelectedGroup(group.id)
+}
+
+// 分组长按删除逻辑
+const handleGroupLongPressStart = (event, group) => {
+  if (isSortMode.value) return
+  groupLongPressTimer.value = setTimeout(() => {
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50)
+    }
+    groupToDeleteConfirm.value = group
+  }, 800)
+}
+
+const handleGroupLongPressEnd = () => {
+  if (groupLongPressTimer.value) {
+    clearTimeout(groupLongPressTimer.value)
+    groupLongPressTimer.value = null
+  }
+}
+
+const confirmDeleteGroup = async () => {
+  if (!groupToDeleteConfirm.value) return
+  try {
+    appStore.setLoading(true)
+    await accountsStore.deleteGroup(groupToDeleteConfirm.value.id)
+    if (selectedGroupId.value === groupToDeleteConfirm.value.id) {
+      accountsStore.setSelectedGroup(null)
+    }
+    groupToDeleteConfirm.value = null
+  } catch (error) {
+    console.error('Delete group failed:', error)
+  } finally {
+    appStore.setLoading(false)
+  }
+}
+
+const getGroupAccountCount = (groupId) => {
+  return accounts.value.filter(acc => acc.group_id === groupId).length
+}
+
+const handleCreateGroup = async () => {
+  if (!newGroupName.value.trim() || isCreatingGroup.value) return
+  
+  try {
+    isCreatingGroup.value = true
+    await accountsStore.createGroup({ name: newGroupName.value.trim() })
+    showCreateGroupModal.value = false
+    newGroupName.value = ''
+  } catch (error) {
+    if (error.response?.data?.message?.includes('name')) {
+      appStore.showNotification('error', '分组名格式错误（后端可能不支持中文）')
+    }
+    console.error('Create group failed:', error)
+  } finally {
+    isCreatingGroup.value = false
+  }
+}
+
 onMounted(() => {
   initializeData()
 })
@@ -424,3 +739,31 @@ onUnmounted(() => {
   // Cleanup managed by store
 })
 </script>
+
+<style scoped>
+/* 隐藏滚动条 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.list-move, /* 对移动中的元素应用过渡 */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* 确保在排序模式下即使位置变化，内部元素也不会有奇怪的闪烁 */
+.list-leave-active {
+  position: absolute;
+}
+</style>

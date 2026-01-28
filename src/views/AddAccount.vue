@@ -387,7 +387,7 @@ const predefinedIcons = [
   { name: 'Telegram', value: 'https://cdn.jsdelivr.net/gh/simple-icons/simple-icons@latest/icons/telegram.svg' }
 ]
 
-const groups = computed(() => accountsStore.groups)
+const groups = computed(() => accountsStore.groups.filter(g => !['所有账户', '所有账号', 'All accounts'].includes(g.name)))
 
 const selectIcon = (iconValue) => {
   formData.icon = iconValue
