@@ -1,39 +1,28 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
-    /* 禁用过度滚动和回弹效果 */
-    overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
   }
-  
+
   body {
     @apply text-gray-900 bg-gray-50;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* 禁用过度滚动和回弹效果 */
-    overscroll-behavior: none;
-    overflow-x: hidden;
   }
 
   /* 禁用移动端点击高亮 */
   * {
     -webkit-tap-highlight-color: transparent;
-    /* 禁用过度滚动 */
-    overscroll-behavior: none;
   }
 
-  /* 禁用所有元素的过度滚动 */
-  .min-h-screen {
-    overscroll-behavior: none;
-  }
-
-  /* 自定义滚动条 */
+  /* 恢复系统感原生滚动条，支持滑动时可见 */
   ::-webkit-scrollbar {
-    width: 4px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -41,11 +30,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 rounded-full;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400;
+    background: rgba(0, 0, 0, 0.25);
   }
 }
 
@@ -81,4 +71,4 @@
   .badge-error {
     @apply badge bg-red-100 text-red-800;
   }
-} 
+}

@@ -100,47 +100,55 @@
           @visibility-change="onTimerVisibilityChange"
         />
 
-        <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar touch-pan-x overscroll-x-contain h-16 py-1 mb-2 flex-nowrap" style="-webkit-overflow-scrolling: touch;" v-if="groups.length > 0 || accounts.length > 0">
-          <!-- 还原自定义的 全部 按钮 -->
-          <button
+        <!-- 还原单行横向滚动分组导航 -->
+        <div class="flex items-center overflow-x-auto no-scrollbar h-20 mb-2 flex-nowrap w-[calc(100%+2rem)] -mx-4 relative z-30" 
+             style="-webkit-overflow-scrolling: touch;" 
+             v-if="groups.length > 0 || accounts.length > 0"
+             @touchstart="handleGroupContainerTouchStart"
+             @touchmove="handleGroupContainerTouchMove"
+             @touchend="handleGroupContainerTouchEnd"
+        >
+          <!-- 物理左边距 (16px) -->
+          <div class="w-4 flex-none"></div>
+
+          <!-- 全部 按钮 -->
+          <div
             @click="setSelectedGroup(null)"
             :class="[
-              'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none flex-shrink-0 origin-left',
+              'px-4 py-2.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap select-none flex-shrink-0 cursor-pointer mr-3 shadow-sm',
               selectedGroupId === null
-                ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-primary-200 scale-105 z-10'
-                : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200/50'
+                ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md ring-2 ring-primary-300 ring-offset-1'
+                : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
             ]"
           >
             全部 ({{ accounts.length }})
-          </button>
+          </div>
 
           <template v-for="group in groups" :key="group.id">
-            <button
+            <div
               v-if="!['所有账户', '所有账号', 'All accounts'].includes(group.name)"
               @click="handleGroupClick(group)"
-              @touchstart="handleGroupLongPressStart($event, group)"
-              @touchmove="handleGroupLongPressEnd"
-              @touchend="handleGroupLongPressEnd"
-              @mousedown="handleGroupLongPressStart($event, group)"
-              @mouseup="handleGroupLongPressEnd"
+              :data-group-id="group.id"
               :class="[
-                'px-4 py-2.5 rounded-2xl font-bold transition-all whitespace-nowrap shadow-sm select-none flex-shrink-0',
+                'px-4 py-2.5 rounded-xl font-bold transition-all duration-200 whitespace-nowrap select-none flex-shrink-0 cursor-pointer mr-3 shadow-sm group-item',
                 selectedGroupId === group.id
-                  ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-primary-200 scale-105 z-10'
-                  : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200/50'
+                  ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md ring-2 ring-primary-300 ring-offset-1'
+                  : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
               ]"
             >
               {{ group.name }} ({{ getGroupAccountCount(group.id) }})
-            </button>
+            </div>
           </template>
           
-          <button
+          <div
             @click="showCreateGroupModal = true"
-            class="px-5 py-2.5 rounded-2xl bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200 transition-all shadow-sm flex items-center justify-center min-w-[50px] flex-shrink-0 mr-4"
-            title="快捷创建分组"
+            class="px-5 py-2.5 rounded-xl bg-gray-50 text-gray-400 border border-gray-100 flex items-center justify-center min-w-[50px] flex-shrink-0 cursor-pointer active:scale-90 transition-transform"
           >
             <Plus class="h-5 w-5" />
-          </button>
+          </div>
+
+          <!-- 物理右边距 (16px)，防止遮挡并对齐 -->
+          <div class="w-4 flex-none"></div>
         </div>
 
         <!-- 账户列表 -->
@@ -393,7 +401,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAccountsStore } from '@/stores/accounts'
@@ -433,6 +441,8 @@ const newGroupName = ref('')
 const isCreatingGroup = ref(false)
 const groupToDeleteConfirm = ref(null)
 const groupLongPressTimer = ref(null)
+const groupTouchStartX = ref(0)
+const groupTouchStartY = ref(0)
 
 // 加载状态
 const isLoadingInitial = ref(false)
@@ -676,18 +686,44 @@ const handleGroupClick = (group) => {
   accountsStore.setSelectedGroup(group.id)
 }
 
-// 分组长按删除逻辑
-const handleGroupLongPressStart = (event, group) => {
-  if (isSortMode.value) return
-  groupLongPressTimer.value = setTimeout(() => {
-    if (window.navigator && window.navigator.vibrate) {
-      window.navigator.vibrate(50)
+const handleGroupContainerTouchStart = (event) => {
+  const touch = event.touches[0]
+  groupTouchStartX.value = touch.clientX
+  groupTouchStartY.value = touch.clientY
+  
+  // 通过点击点定位具体的分组元素
+  const target = document.elementFromPoint(touch.clientX, touch.clientY)
+  const groupItem = target?.closest('.group-item')
+  
+  if (groupItem) {
+    const groupId = groupItem.getAttribute('data-group-id')
+    const group = groups.value.find(g => String(g.id) === String(groupId))
+    
+    if (group) {
+      groupLongPressTimer.value = setTimeout(() => {
+        if (window.navigator && window.navigator.vibrate) {
+          window.navigator.vibrate(50)
+        }
+        groupToDeleteConfirm.value = group
+      }, 800)
     }
-    groupToDeleteConfirm.value = group
-  }, 800)
+  }
 }
 
-const handleGroupLongPressEnd = () => {
+const handleGroupContainerTouchMove = (event) => {
+  const touch = event.touches[0]
+  const deltaX = Math.abs(touch.clientX - groupTouchStartX.value)
+  const deltaY = Math.abs(touch.clientY - groupTouchStartY.value)
+  
+  if (deltaX > 5 || deltaY > 5) {
+    if (groupLongPressTimer.value) {
+      clearTimeout(groupLongPressTimer.value)
+      groupLongPressTimer.value = null
+    }
+  }
+}
+
+const handleGroupContainerTouchEnd = () => {
   if (groupLongPressTimer.value) {
     clearTimeout(groupLongPressTimer.value)
     groupLongPressTimer.value = null
@@ -742,13 +778,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 隐藏滚动条 */
 .no-scrollbar::-webkit-scrollbar {
-  display: none;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 .list-move, /* 对移动中的元素应用过渡 */

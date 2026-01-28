@@ -14,6 +14,7 @@
     "tauri:android:build": "tauri android build"
   },
   "dependencies": {
+    "@better-scroll/core": "^2.5.1",
     "@headlessui/vue": "^1.7.14",
     "@vueuse/core": "^10.3.0",
     "axios": "^1.5.0",
