@@ -1,32 +1,35 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#3b82f6" />
-    <!-- 移动端状态栏设置 -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <!-- 禁用iOS Safari的回弹效果 -->
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="description" content="2FAuth管理应用 - 现代化的双因素认证管理工具" />
-    <title>2FAuth管理器</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-      /* 移动端优化 - 禁用过度滚动 */
-      html, body {
-        overscroll-behavior: none;
-        -webkit-overflow-scrolling: touch;
-        overflow-x: hidden;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-50">
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
-</html> 
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#3b82f6" />
+  <!-- 移动端状态栏设置 -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <!-- 禁用iOS Safari的回弹效果 -->
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="description" content="2FAuth管理应用 - 现代化的双因素认证管理工具" />
+  <title>2FAuth管理器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* 移动端优化 - 禁用弹性效果 */
+    html,
+    body {
+      overscroll-behavior-y: none;
+      overflow-x: hidden;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
