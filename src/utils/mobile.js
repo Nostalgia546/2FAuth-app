@@ -78,23 +78,29 @@ export const disableScrollBounce = () => {
     style.id = 'mobile-optimizations'
     style.textContent = `
       html {
-        overscroll-behavior-y: none !important;
+        height: 100% !important;
+        overflow: hidden !important;
       }
       
       body {
-        position: relative !important;
+        height: 100% !important;
+        overflow-y: auto !important;
         overflow-x: hidden !important;
         width: 100% !important;
-        height: auto !important;
-        min-height: 100vh !important;
         overscroll-behavior-y: none !important;
-        touch-action: pan-y !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-x pan-y !important;
+        position: relative !important;
       }
       
       #app {
         width: 100%;
-        min-height: 100vh;
-        overflow-x: hidden;
+        min-height: 100%;
+      }
+      
+      /* 修复横向滚动条可能导致的溢出 */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
       }
       
       /* 修复移动端点击缩放 */
