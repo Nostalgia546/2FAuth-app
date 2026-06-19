@@ -35,6 +35,15 @@ import { useAccountsStore } from './stores/accounts'
     // 初始化认证
     authStore.initAuth()
     
+    // 禁用全局默认右键菜单，使其更像原生应用
+    // 但保留输入框的右键菜单，以便能够粘贴
+    document.addEventListener('contextmenu', (e) => {
+      const target = e.target;
+      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    });
+    
     // 如果已登录，启动全局OTP系统
     if (authStore.isAuthenticated) {
       try {

@@ -198,7 +198,7 @@
           </div>
           <div class="flex-1">
             <h3 class="text-lg font-semibold text-gray-900 mb-1">2FAuth 移动端</h3>
-            <p class="text-sm text-gray-600 mb-1">版本 1.0.0</p>
+            <p class="text-sm text-gray-600 mb-1">版本 2.0.0</p>
             <p class="text-sm text-gray-500">基于 Vue3 + Tauri 构建</p>
           </div>
         </div>
@@ -360,7 +360,7 @@
               <img src="/logo.png" alt="2FAuth Logo" class="w-full h-full object-contain rounded-[2rem] p-1" />
             </div>
             <h3 class="text-3xl font-black text-gray-900 mb-3 relative z-10">2FAuth App</h3>
-            <p class="text-gray-500 mb-10 font-mono font-bold tracking-widest relative z-10">v1.0.0 <span class="text-primary-500 ml-2">PRO</span></p>
+            <p class="text-gray-500 mb-10 font-mono font-bold tracking-widest relative z-10">v2.0.0</p>
             
             <div class="w-full max-w-md bg-white/80 backdrop-blur-md rounded-2xl p-6 border border-white shadow-sm text-left space-y-5 relative z-10">
               <div class="flex justify-between items-center border-b border-gray-100/50 pb-4">

@@ -211,6 +211,7 @@
               @mousedown="handleMouseDown($event, account)"
               @mouseup="handleMouseUp"
               @mouseleave="handleMouseUp"
+              @contextmenu.prevent="startLongPress(account)"
             >
               <!-- 隐藏的操作按钮 -->
               <div 
