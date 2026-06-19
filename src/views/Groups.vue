@@ -21,7 +21,7 @@
     </header>
 
     <!-- 分组列表 - 添加顶部间距 -->
-    <div class="px-4 py-4 space-y-3" style="margin-top: 80px;">
+    <div class="px-4 py-4 space-y-3 md:max-w-2xl md:mx-auto" style="margin-top: 80px;">
       <div v-if="groups.length === 0" class="text-center py-12">
         <div class="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Folder class="h-8 w-8 text-gray-400" />

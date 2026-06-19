@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20">
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20 md:pb-0 md:h-screen md:overflow-hidden">
     <!-- 固定顶部导航 -->
-    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50 md:hidden">
       <div class="flex items-center justify-center p-4">
         <h1 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">设置</h1>
       </div>
@@ -35,8 +35,8 @@
       </div>
     </div>
 
-    <!-- 主要内容 -->
-    <div v-else class="p-6 space-y-6">
+    <!-- 移动端视图 (在桌面端隐藏) -->
+    <div v-if="!isLoading && !loadError" class="p-6 space-y-6 md:hidden">
       <!-- 用户信息卡片 -->
       <div class="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-6 text-white shadow-xl">
         <div class="flex items-center space-x-4">
@@ -205,6 +205,187 @@
       </div>
     </div>
 
+    <!-- 桌面端原生高级设置视图 (在移动端隐藏) -->
+    <div v-if="!isLoading && !loadError" class="hidden md:flex md:max-w-7xl md:mx-auto md:h-screen w-full">
+      
+      <!-- 侧边栏 (透明悬浮感) -->
+      <div class="w-80 flex flex-col pt-12 pb-8 px-6">
+        <div class="mb-12 px-4 flex items-center space-x-4">
+          <div class="w-14 h-14 bg-gradient-to-tr from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center shadow-xl shadow-gray-900/20 flex-shrink-0">
+            <User class="w-7 h-7 text-white" />
+          </div>
+          <div class="overflow-hidden">
+            <h2 class="text-xl font-extrabold text-gray-900 truncate tracking-tight">{{ getUserDisplayName() }}</h2>
+            <p class="text-sm font-medium text-gray-500">2FAuth 管理员</p>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto space-y-2 no-scrollbar px-2">
+          <button @click="activeTab = 'account'" :class="['w-full flex items-center space-x-4 px-5 py-4 rounded-2xl font-bold transition-all duration-300', activeTab === 'account' ? 'bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.08)] text-primary-600 scale-[1.02]' : 'text-gray-500 hover:bg-white/50 hover:text-gray-900']">
+            <div :class="['p-2 rounded-xl transition-colors', activeTab === 'account' ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-400']">
+              <User class="w-5 h-5" />
+            </div>
+            <span>账户与统计</span>
+          </button>
+          
+          <button @click="activeTab = 'connection'" :class="['w-full flex items-center space-x-4 px-5 py-4 rounded-2xl font-bold transition-all duration-300', activeTab === 'connection' ? 'bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.08)] text-primary-600 scale-[1.02]' : 'text-gray-500 hover:bg-white/50 hover:text-gray-900']">
+            <div :class="['p-2 rounded-xl transition-colors', activeTab === 'connection' ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-400']">
+              <Server class="w-5 h-5" />
+            </div>
+            <span>连接设置</span>
+          </button>
+          
+          <button @click="activeTab = 'about'" :class="['w-full flex items-center space-x-4 px-5 py-4 rounded-2xl font-bold transition-all duration-300', activeTab === 'about' ? 'bg-white/90 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.08)] text-primary-600 scale-[1.02]' : 'text-gray-500 hover:bg-white/50 hover:text-gray-900']">
+            <div :class="['p-2 rounded-xl transition-colors', activeTab === 'about' ? 'bg-primary-50 text-primary-600' : 'bg-gray-100 text-gray-400']">
+              <Info class="w-5 h-5" />
+            </div>
+            <span>关于</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 内容区 (毛玻璃高级卡片) -->
+      <div class="flex-1 overflow-y-auto no-scrollbar py-12 px-10">
+        <!-- 账户与统计 -->
+        <div v-if="activeTab === 'account'" class="max-w-4xl mx-auto">
+          <h2 class="text-4xl font-extrabold text-gray-900 mb-10 tracking-tight">账户与统计</h2>
+          
+          <div class="space-y-8 max-w-4xl">
+            <div class="bg-white/60 backdrop-blur-2xl rounded-3xl p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 ml-2">数据概览</h3>
+              <div class="grid grid-cols-2 gap-6">
+                <div class="flex items-center space-x-5 bg-white/80 p-6 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
+                  <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 shadow-inner">
+                    <Users class="w-7 h-7" />
+                  </div>
+                  <div>
+                    <p class="text-3xl font-black text-gray-900">{{ accountsStore.accounts.length }}</p>
+                    <p class="text-sm font-bold text-gray-400 mt-1">验证器账户</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-5 bg-white/80 p-6 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
+                  <div class="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 shadow-inner">
+                    <Folder class="w-7 h-7" />
+                  </div>
+                  <div>
+                    <p class="text-3xl font-black text-gray-900">{{ accountsStore.groups.length }}</p>
+                    <p class="text-sm font-bold text-gray-400 mt-1">文件夹</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 ml-2">系统操作</h3>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between p-6 bg-white/60 backdrop-blur-2xl border border-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all">
+                  <div class="flex items-center space-x-5">
+                    <div class="bg-blue-50 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600"><RefreshCw class="w-6 h-6"/></div>
+                    <div>
+                      <p class="font-extrabold text-gray-900 text-lg">强制刷新数据</p>
+                      <p class="text-sm font-medium text-gray-500 mt-1">从服务器重新拉取最新数据</p>
+                    </div>
+                  </div>
+                  <button @click="refreshData" :disabled="isRefreshing" class="px-6 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-colors shadow-md">
+                    {{ isRefreshing ? '刷新中...' : '立即刷新' }}
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between p-6 bg-white/60 backdrop-blur-2xl border border-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all">
+                  <div class="flex items-center space-x-5">
+                    <div class="bg-red-50 w-12 h-12 rounded-2xl flex items-center justify-center text-red-600 shadow-inner"><LogOut class="w-6 h-6"/></div>
+                    <div>
+                      <p class="font-extrabold text-gray-900 text-lg">退出登录</p>
+                      <p class="text-sm font-medium text-gray-500 mt-1">清除本地缓存并返回登录页</p>
+                    </div>
+                  </div>
+                  <button @click="handleLogout" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-md shadow-red-600/20">
+                    退出登录
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 连接设置 -->
+        <div v-if="activeTab === 'connection'" class="max-w-4xl mx-auto">
+          <h2 class="text-4xl font-extrabold text-gray-900 mb-10 tracking-tight">连接设置</h2>
+          
+          <div class="bg-white/60 backdrop-blur-2xl border border-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden max-w-4xl">
+            <div class="p-8 space-y-8">
+              <div class="space-y-3">
+                <label class="block text-xs font-black text-gray-400 uppercase tracking-widest ml-1">服务器地址</label>
+                <div class="flex items-center space-x-4">
+                  <input :value="authStore.baseUrl || '未设置'" readonly class="flex-1 p-4 bg-white/80 border border-white rounded-2xl text-gray-800 font-bold font-mono text-sm shadow-inner outline-none" />
+                  <button @click="copyToClipboard(authStore.baseUrl)" class="p-4 text-gray-500 hover:text-gray-900 bg-white/80 hover:bg-white rounded-2xl border border-white transition-all shadow-sm hover:shadow-md hover:scale-105">
+                    <Copy class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <label class="block text-xs font-black text-gray-400 uppercase tracking-widest ml-1">API 密钥</label>
+                <div class="flex items-center space-x-4">
+                  <input :value="showApiKey ? (authStore.apiKey || '未设置') : '••••••••••••••••••••••••••••••••'" readonly type="text" class="flex-1 p-4 bg-white/80 border border-white rounded-2xl text-gray-800 font-bold font-mono text-sm tracking-widest shadow-inner outline-none" />
+                  <button @click="showApiKey = !showApiKey" class="p-4 text-gray-500 hover:text-gray-900 bg-white/80 hover:bg-white rounded-2xl border border-white transition-all shadow-sm hover:shadow-md hover:scale-105">
+                    <Eye v-if="!showApiKey" class="w-5 h-5" />
+                    <EyeOff v-else class="w-5 h-5" />
+                  </button>
+                  <button @click="copyToClipboard(authStore.apiKey)" class="p-4 text-gray-500 hover:text-gray-900 bg-white/80 hover:bg-white rounded-2xl border border-white transition-all shadow-sm hover:shadow-md hover:scale-105">
+                    <Copy class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="p-6 bg-white/40 border-t border-white/50 flex justify-end">
+              <button @click="openEditConnection" class="px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-600/30 hover:shadow-xl hover:shadow-primary-600/40 hover:-translate-y-0.5">
+                修改连接参数
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 关于 -->
+        <div v-if="activeTab === 'about'" class="max-w-4xl mx-auto">
+          <h2 class="text-4xl font-extrabold text-gray-900 mb-10 tracking-tight">关于</h2>
+          
+          <div class="flex flex-col items-center justify-center py-16 text-center bg-white/60 backdrop-blur-2xl border border-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-4xl relative overflow-hidden">
+            <!-- 装饰性背景球 -->
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-primary-200/50 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-200/50 rounded-full blur-3xl"></div>
+            
+            <div class="w-28 h-28 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-gray-900/10 mb-8 relative z-10 bg-white border border-white">
+              <img src="/logo.png" alt="2FAuth Logo" class="w-full h-full object-contain rounded-[2rem] p-1" />
+            </div>
+            <h3 class="text-3xl font-black text-gray-900 mb-3 relative z-10">2FAuth App</h3>
+            <p class="text-gray-500 mb-10 font-mono font-bold tracking-widest relative z-10">v1.0.0 <span class="text-primary-500 ml-2">PRO</span></p>
+            
+            <div class="w-full max-w-md bg-white/80 backdrop-blur-md rounded-2xl p-6 border border-white shadow-sm text-left space-y-5 relative z-10">
+              <div class="flex justify-between items-center border-b border-gray-100/50 pb-4">
+                <span class="text-gray-400 font-bold uppercase text-xs tracking-wider">核心框架</span>
+                <span class="font-black text-gray-800">Vue 3 + Tauri 2.0</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-gray-100/50 pb-4">
+                <span class="text-gray-400 font-bold uppercase text-xs tracking-wider">UI 引擎</span>
+                <span class="font-black text-gray-800">TailwindCSS</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-gray-100/50 pb-4">
+                <span class="text-gray-400 font-bold uppercase text-xs tracking-wider">平台架构</span>
+                <span class="font-black text-gray-800">Windows 原生 (WebView2)</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-400 font-bold uppercase text-xs tracking-wider">开源主页</span>
+                <a href="https://github.com/Nostalgia546/2FAuth-app" target="_blank" class="font-black text-primary-600 hover:text-primary-700 underline underline-offset-2 transition-colors">GitHub 项目地址</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- 修改连接对话框 -->
     <div v-if="showEditConnection" class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in">
       <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-scale-up">
@@ -276,6 +457,7 @@ const appStore = useAppStore()
 const router = useRouter()
 
 // 状态变量
+const activeTab = ref('account')
 const isLoading = ref(true)
 const loadError = ref('')
 const showApiKey = ref(false)

@@ -1,6 +1,6 @@
 <template>
-  <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/30 z-50 safe-area-pb">
-    <div class="flex items-center justify-around py-3 px-6 max-w-md mx-auto">
+  <div class="fixed bottom-0 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:w-max md:bottom-6 bg-white/95 backdrop-blur-xl border-t md:border border-gray-200/30 z-50 safe-area-pb md:rounded-3xl md:shadow-2xl transition-all">
+    <div class="flex items-center justify-around py-3 px-6 max-w-md mx-auto md:px-8 md:gap-8">
       <router-link
         v-for="tab in tabs"
         :key="tab.name"

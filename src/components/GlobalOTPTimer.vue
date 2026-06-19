@@ -4,7 +4,7 @@
     :class="containerClass"
     ref="timerElement"
   >
-    <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
+    <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all h-full flex flex-col justify-center">
       <div class="flex items-center justify-between">
         <!-- 时间信息 -->
         <div class="flex items-center space-x-3">
@@ -131,7 +131,7 @@ const containerClass = computed(() => {
   if (props.position === 'header') {
     return 'fixed top-16 left-4 right-4 z-30'
   } else {
-    return 'mb-6'
+    return 'mb-6 md:mb-0 h-full'
   }
 })
 

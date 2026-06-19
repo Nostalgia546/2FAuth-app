@@ -1,14 +1,12 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20">
-    <!-- 固定顶部导航栏 -->
-    <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 z-40">
-      <div class="px-4 sm:px-6 lg:px-8">
+    <!-- 固定顶部导航栏 (仅移动端) -->
+    <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 z-40 md:hidden">
+      <div class="px-4 sm:px-6">
         <div class="flex items-center h-16 justify-between">
           <div class="flex items-center space-x-3">
-            <div class="h-8 w-8 bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg flex items-center justify-center shadow-lg">
-              <Shield class="h-5 w-5 text-white" />
-            </div>
-            <h1 class="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">2FAuth</h1>
+            <img src="/logo.png" alt="2FAuth Logo" class="h-9 w-9 shadow-sm" />
+            <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">2FAuth App</h1>
           </div>
           
           <!-- 顶栏版本的时间组件 - 根据内容区可见性显示 -->
@@ -20,7 +18,7 @@
       </div>
     </header>
 
-    <main class="px-4 py-6 pt-20" @click="resetAllCards">
+    <main class="px-4 py-6 pt-[80px] md:pt-10 md:pb-24 md:px-8 md:max-w-7xl md:mx-auto h-full" @click="resetAllCards">
       <!-- 初始加载状态 -->
       <div v-if="isLoadingInitial" class="flex flex-col items-center justify-center py-20 animate-fade-in">
         <div class="relative mb-6">
@@ -66,39 +64,54 @@
       </div>
 
       <template v-else>
-        <!-- 统计卡片 -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-600 font-medium">总账户数</p>
-                <p class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{{ accounts.length }}</p>
+        <!-- 桌面端专属巨型标题 -->
+        <div class="hidden md:flex items-center justify-between mb-8 animate-fade-in">
+            <div class="flex items-center space-x-5">
+              <div class="bg-white p-1.5 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] border border-gray-100">
+                <img src="/logo.png" alt="2FAuth Logo" class="h-12 w-12 rounded-xl" />
               </div>
-              <div class="h-12 w-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Users class="h-6 w-6 text-white" />
-              </div>
+              <h1 class="text-3xl font-black tracking-tight text-gray-900">2FAuth App</h1>
             </div>
-          </div>
-          
-          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-600 font-medium">分组数量</p>
-                <p class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{{ groups.length }}</p>
-              </div>
-              <div class="h-12 w-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Folder class="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </div>
         </div>
 
-        <!-- 内容区版本的时间组件 -->
-        <GlobalOTPTimer 
-          v-if="accounts.length > 0" 
-          position="content" 
-          @visibility-change="onTimerVisibilityChange"
-        />
+        <!-- 顶部概览区域 (统计卡片 + 计时器) -->
+        <div class="flex flex-col md:grid md:grid-cols-3 md:gap-6 mb-6">
+          <!-- 统计卡片 -->
+          <div class="grid grid-cols-2 gap-4 md:col-span-2 mb-6 md:mb-0 h-full">
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all h-full flex flex-col justify-center">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600 font-medium">总账户数</p>
+                  <p class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{{ accounts.length }}</p>
+                </div>
+                <div class="h-12 w-12 bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Users class="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all h-full flex flex-col justify-center">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600 font-medium">分组数量</p>
+                  <p class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{{ groups.length }}</p>
+                </div>
+                <div class="h-12 w-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Folder class="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 内容区版本的时间组件 -->
+          <div class="md:col-span-1 h-full">
+            <GlobalOTPTimer 
+              v-if="accounts.length > 0" 
+              position="content" 
+              @visibility-change="onTimerVisibilityChange"
+            />
+          </div>
+        </div>
 
         <!-- 还原单行横向滚动分组导航 -->
         <div class="flex items-center overflow-x-auto no-scrollbar h-20 mb-2 flex-nowrap w-[calc(100%+2rem)] -mx-4 relative z-30" 
@@ -175,7 +188,7 @@
             </template>
           </div>
 
-          <TransitionGroup name="list" tag="div" class="space-y-4">
+          <TransitionGroup name="list" tag="div" class="space-y-4 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6">
             <div
               v-for="account in displayAccounts"
               :key="account.id"

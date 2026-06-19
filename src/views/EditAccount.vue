@@ -24,7 +24,7 @@
     </div>
 
     <!-- 主要内容 -->
-    <div v-else-if="account" class="p-6 space-y-6">
+    <div v-else-if="account" class="p-6 space-y-6 md:max-w-2xl md:mx-auto">
       <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- 图标设置 -->
         <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">

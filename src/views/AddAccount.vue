@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20" :class="{ 'overflow-hidden': addMethod === 'qr' }">
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20 md:pb-0 md:h-screen md:overflow-hidden" :class="{ 'overflow-hidden': addMethod === 'qr' }">
     <!-- 固定头部 -->
-    <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 z-40">
+    <header class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-200/50 z-40 md:hidden">
       <div class="px-4 py-4">
         <div class="flex items-center justify-center">
           <h1 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">添加账户</h1>
@@ -10,8 +10,9 @@
     </header>
 
     <!-- 添加方式选择 - 添加顶部间距 -->
-    <div class="px-4 py-6" style="margin-top: 80px;" :class="{ 'overflow-hidden': addMethod === 'qr' }">
-      <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="px-4 py-6 mt-[80px] md:mt-8 md:max-w-7xl md:mx-auto md:flex md:gap-8 md:h-[calc(100vh-64px)] md:items-stretch" :class="{ 'overflow-hidden': addMethod === 'qr' }">
+      <!-- 移动端：扫码/手动 切换按钮 -->
+      <div class="grid grid-cols-2 gap-4 mb-6 md:hidden">
         <button
           @click="addMethod = 'qr'"
           :class="[
@@ -45,8 +46,8 @@
         </button>
       </div>
 
-      <!-- 二维码扫描 -->
-      <div v-if="addMethod === 'qr'" class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg mb-6 flex-1 flex items-center">
+      <!-- 左侧：二维码智能解析区 (移动端依条件显示，桌面端固定在左侧) -->
+      <div :class="[addMethod === 'qr' ? 'flex' : 'hidden', 'md:flex md:w-5/12 lg:w-1/3 bg-gradient-to-br from-white/90 to-gray-50/90 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/60 shadow-xl mb-6 md:mb-0 md:h-full items-center flex-col justify-center']">
         <div class="text-center w-full">
           <div class="h-16 w-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
             <QrCode class="h-8 w-8 text-white" />
@@ -57,16 +58,34 @@
           </p>
           
           <!-- 扫描选项 -->
-          <div class="space-y-3">
+          <div class="space-y-4 w-full max-w-xs mx-auto mt-8">
+            <div class="hidden md:block mb-8">
+              <div class="border-2 border-dashed border-primary-300 rounded-2xl p-8 bg-primary-50/50 flex flex-col items-center justify-center cursor-pointer hover:bg-primary-50 hover:border-primary-400 transition-colors group">
+                <Upload class="h-10 w-10 text-primary-400 mb-3 group-hover:text-primary-500 group-hover:scale-110 transition-transform" />
+                <p class="text-sm font-medium text-primary-700 leading-relaxed">点击、拖拽图片<br/>或 <strong class="text-primary-800">Ctrl+V 粘贴</strong>二维码</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  @change="handleImageUpload"
+                  class="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+              <div class="relative flex items-center py-4">
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase font-medium tracking-wider">或</span>
+                <div class="flex-grow border-t border-gray-200"></div>
+              </div>
+            </div>
+
             <button
               @click="goToQRScanner"
-              class="w-full flex items-center justify-center space-x-2 py-4 px-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              class="w-full flex items-center justify-center space-x-2 py-4 px-4 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-xl font-medium hover:from-gray-900 hover:to-black transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               <Camera class="h-5 w-5" />
               <span>启动QR码扫描器</span>
             </button>
             
-            <label class="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gray-100/80 text-gray-700 rounded-xl font-medium hover:bg-gray-200/80 transition-all cursor-pointer shadow-sm hover:shadow-md">
+            <label class="w-full flex md:hidden items-center justify-center space-x-2 py-4 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all cursor-pointer shadow-sm">
               <Upload class="h-5 w-5" />
               <span>上传二维码图片</span>
               <input
@@ -80,8 +99,8 @@
         </div>
       </div>
 
-      <!-- 手动添加表单 -->
-      <div v-if="addMethod === 'manual'" class="space-y-6 overflow-y-auto">
+      <!-- 右侧：手动添加表单 (移动端依条件显示，桌面端固定在右侧) -->
+      <div :class="[addMethod === 'manual' ? 'block' : 'hidden', 'md:block md:w-7/12 lg:w-2/3 md:h-full md:overflow-y-auto no-scrollbar md:pr-4 pb-20 md:pb-0']">
         <form @submit.prevent="handleSubmit" class="space-y-6">
           <!-- 图标选择 -->
           <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
@@ -90,7 +109,10 @@
             </label>
             <div class="flex items-center space-x-4">
               <div class="flex-shrink-0">
-                <AccountIcon :account="formData" size="large" />
+                <AccountIcon v-if="formData.icon || formData.service || formData.account" :account="formData" size="large" />
+                <div v-else class="h-16 w-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300">
+                  <ImageIcon class="w-7 h-7" />
+                </div>
               </div>
               <div class="flex-1">
                 <button
@@ -147,16 +169,16 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   选择精选图标
                 </label>
-                <div class="grid grid-cols-6 gap-3">
+                <div class="grid grid-cols-5 md:grid-cols-6 gap-4">
                   <button
                     v-for="icon in predefinedIcons"
                     :key="icon.name"
                     type="button"
                     @click="selectIcon(icon.value)"
-                    class="p-3 rounded-xl border-2 transition-all hover:border-primary-300"
-                    :class="formData.icon === icon.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-white'"
+                    class="p-3 rounded-2xl transition-all duration-300 flex items-center justify-center relative group"
+                    :class="formData.icon === icon.value ? 'bg-white shadow-[0_4px_20px_rgb(59,130,246,0.15)] ring-2 ring-primary-500 scale-105 z-10' : 'bg-gray-50/80 hover:bg-white hover:shadow-md hover:scale-105 border border-gray-100'"
                   >
-                    <img :src="icon.value" :alt="icon.name" class="w-8 h-8 mx-auto" />
+                    <img :src="icon.value" :alt="icon.name" class="w-10 h-10 mx-auto drop-shadow-sm group-hover:scale-110 transition-transform duration-300" />
                   </button>
                 </div>
               </div>
@@ -169,88 +191,94 @@
                 <div v-else-if="serverIcons.length === 0" class="text-center py-8 text-gray-500 text-sm">
                   服务器上暂无图标
                 </div>
-                <div v-else class="grid grid-cols-6 gap-3 max-h-60 overflow-y-auto p-1">
+                <div v-else class="grid grid-cols-5 md:grid-cols-6 gap-4 max-h-64 overflow-y-auto p-2 no-scrollbar">
                   <button
                     v-for="icon in serverIcons"
                     :key="icon"
                     type="button"
                     @click="selectIcon(icon)"
-                    class="p-2 rounded-xl border-2 transition-all hover:border-primary-300"
-                    :class="formData.icon === icon ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-white'"
+                    class="p-3 rounded-2xl transition-all duration-300 flex items-center justify-center relative group"
+                    :class="formData.icon === icon ? 'bg-white shadow-[0_4px_20px_rgb(59,130,246,0.15)] ring-2 ring-primary-500 scale-105 z-10' : 'bg-gray-50/80 hover:bg-white hover:shadow-md hover:scale-105 border border-gray-100'"
                   >
-                    <img :src="accountsStore.getIconUrl(icon)" class="w-10 h-10 mx-auto object-contain rounded-lg" />
+                    <img :src="accountsStore.getIconUrl(icon)" class="w-10 h-10 mx-auto object-contain drop-shadow-sm group-hover:scale-110 transition-transform duration-300 rounded-lg" />
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 服务名称 -->
-          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
-            <label class="block text-sm font-semibold text-gray-700 mb-3">
-              服务名称 *
-            </label>
-            <input
-              v-model="formData.service"
-              type="text"
-              required
-              class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
-              placeholder="例如：Google、GitHub、Microsoft"
-              @dblclick="$event.target.select()"
-            />
-          </div>
-
-          <!-- 账户名称 -->
-          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
-            <label class="block text-sm font-semibold text-gray-700 mb-3">
-              账户名称 *
-            </label>
-            <input
-              v-model="formData.account"
-              type="text"
-              required
-              class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
-              placeholder="例如：your@email.com"
-              @dblclick="$event.target.select()"
-            />
-          </div>
-
-          <!-- 密钥 -->
-          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
-            <label class="block text-sm font-semibold text-gray-700 mb-3">
-              密钥 (Secret) *
-            </label>
-            <div class="relative">
+          <!-- 两列网格容器：服务名称与账户名称 -->
+          <div class="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
+            <!-- 服务名称 -->
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                服务名称 *
+              </label>
               <input
-                v-model="formData.secret"
-                :type="showSecret ? 'text' : 'password'"
+                v-model="formData.service"
+                type="text"
                 required
-                class="w-full p-4 pr-12 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
-                placeholder="输入16位以上的密钥"
+                class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
+                placeholder="例如：Google、GitHub、Microsoft"
                 @dblclick="$event.target.select()"
               />
-              <button
-                type="button"
-                @click="showSecret = !showSecret"
-                class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary-600 transition-colors"
-              >
-                <Eye v-if="!showSecret" class="h-5 w-5" />
-                <EyeOff v-else class="h-5 w-5" />
-              </button>
+            </div>
+
+            <!-- 账户名称 -->
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                账户名称 *
+              </label>
+              <input
+                v-model="formData.account"
+                type="text"
+                required
+                class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
+                placeholder="例如：your@email.com"
+                @dblclick="$event.target.select()"
+              />
             </div>
           </div>
 
-          <!-- 分组选择 -->
-          <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
-            <label class="block text-sm font-semibold text-gray-700 mb-3">
-              分组
-            </label>
-            <select v-model="formData.group_id" class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium">
-              <option value="">选择分组（可选）</option>
-              <option v-for="group in groups" :key="group.id" :value="group.id">
-                {{ group.name }}
-              </option>
-            </select>
+          <!-- 两列网格容器：密钥与分组 -->
+          <div class="md:grid md:grid-cols-2 md:gap-6 space-y-6 md:space-y-0">
+            <!-- 密钥 -->
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                密钥 (Secret) *
+              </label>
+              <div class="relative">
+                <input
+                  v-model="formData.secret"
+                  :type="showSecret ? 'text' : 'password'"
+                  required
+                  class="w-full p-4 pr-12 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium"
+                  placeholder="输入16位以上的密钥"
+                  @dblclick="$event.target.select()"
+                />
+                <button
+                  type="button"
+                  @click="showSecret = !showSecret"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                >
+                  <Eye v-if="!showSecret" class="h-5 w-5" />
+                  <EyeOff v-else class="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <!-- 分组选择 -->
+            <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                分组
+              </label>
+              <select v-model="formData.group_id" class="w-full p-4 border border-gray-200 rounded-xl bg-gray-50/50 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium">
+                <option value="">选择分组（可选）</option>
+                <option v-for="group in groups" :key="group.id" :value="group.id">
+                  {{ group.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
           <!-- 高级设置 -->
@@ -268,9 +296,9 @@
             </button>
 
             <div v-if="showAdvanced" class="px-6 pb-6 space-y-4">
-              <div class="border-t border-gray-200 pt-4">
+              <div class="border-t border-gray-200 pt-4 md:grid md:grid-cols-2 md:gap-6 space-y-4 md:space-y-0">
                 <!-- OTP类型 -->
-                <div class="mb-4">
+                <div class="mb-4 md:mb-0">
                   <label class="block text-sm font-semibold text-gray-700 mb-3">
                     OTP类型
                   </label>
@@ -281,7 +309,7 @@
                 </div>
 
                 <!-- 数字位数 -->
-                <div class="mb-4">
+                <div class="mb-4 md:mb-0">
                   <label class="block text-sm font-semibold text-gray-700 mb-3">
                     验证码位数
                   </label>
@@ -292,7 +320,7 @@
                 </div>
 
                 <!-- 时间周期 (仅TOTP) -->
-                <div v-if="formData.otp_type === 'totp'" class="mb-4">
+                <div v-if="formData.otp_type === 'totp'" class="mb-4 md:mb-0">
                   <label class="block text-sm font-semibold text-gray-700 mb-3">
                     时间周期 (秒)
                   </label>
@@ -303,7 +331,7 @@
                 </div>
 
                 <!-- 算法 -->
-                <div>
+                <div class="mb-4 md:mb-0">
                   <label class="block text-sm font-semibold text-gray-700 mb-3">
                     算法
                   </label>
@@ -335,12 +363,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountsStore } from '@/stores/accounts'
 import { useAppStore } from '@/stores/app'
 import {
-  QrCode, Edit, Camera, Upload, Eye, EyeOff, ChevronDown
+  QrCode, Edit, Camera, Upload, Eye, EyeOff, ChevronDown, Image as ImageIcon
 } from 'lucide-vue-next'
 import jsQR from 'jsqr'
 import BottomTabBar from '@/components/BottomTabBar.vue'
@@ -461,8 +489,7 @@ const parseOtpauthUrl = (url) => {
   }
 }
 
-const handleImageUpload = async (event) => {
-  const file = event.target.files[0]
+const processImageFile = async (file) => {
   if (!file) return
 
   try {
@@ -515,8 +542,27 @@ const handleImageUpload = async (event) => {
     appStore.showNotification('error', error.message || '解析二维码失败')
   } finally {
     appStore.setLoading(false)
-    // 清空文件输入
+  }
+}
+
+const handleImageUpload = async (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    await processImageFile(file)
     event.target.value = ''
+  }
+}
+
+const handlePaste = async (event) => {
+  const items = (event.clipboardData || event.originalEvent.clipboardData).items
+  for (const item of items) {
+    if (item.type.indexOf('image') !== -1) {
+      const file = item.getAsFile()
+      if (file) {
+        await processImageFile(file)
+        break
+      }
+    }
   }
 }
 
@@ -611,6 +657,7 @@ const handleSubmit = async () => {
 }
 
 onMounted(async () => {
+  window.addEventListener('paste', handlePaste)
   // 确保分组数据已加载
   if (accountsStore.groups.length === 0) {
     try {
@@ -619,5 +666,9 @@ onMounted(async () => {
       console.error('加载分组失败:', error)
     }
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('paste', handlePaste)
 })
 </script>

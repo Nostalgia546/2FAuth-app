@@ -67,8 +67,8 @@
     <GlobalOTPTimer v-if="accounts.length > 0" />
 
     <!-- 账户列表 - 添加顶部间距 -->
-    <div class="px-4 py-4 space-y-3" :style="{ marginTop: accounts.length > 0 ? '320px' : '220px' }">
-      <div v-if="filteredAndSearchedAccounts.length === 0" class="text-center py-12">
+    <div class="px-4 py-4 space-y-3 md:space-y-0 md:max-w-7xl md:mx-auto md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4" :style="{ marginTop: accounts.length > 0 ? '320px' : '220px' }">
+      <div v-if="filteredAndSearchedAccounts.length === 0" class="text-center py-12 md:col-span-full">
         <div class="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Users class="h-8 w-8 text-gray-400" />
         </div>
