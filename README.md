@@ -1,10 +1,8 @@
-# 2FAuth 移动端管理应用 (非官方)
+# 2FAuth API 版本客户端
 
-
-
-> ⚠️ **重要声明**: 这是一个非官方的2FAuth移动端应用，使用官方api来连接自托管的2FAuth。
+> **重要声明**: 这是一个 2FAuth 的 API 版本客户端，使用官方 API 来连接自托管的 2FAuth。
 > 
-> 📱 **项目状态**: 项目目前基本已完成所有需要用到的功能，已经过测试，请直接到release下载。
+> **项目状态**: 项目目前基本已完成所有需要用到的功能，已经过测试，请直接到 release 下载。
 
 <div align="center">
 
@@ -18,14 +16,20 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
 [![Pinia](https://img.shields.io/badge/Pinia-2.0-FF6B35?style=flat-square)](https://pinia.vuejs.org/)
 
-[功能特性](#-功能特性) • [快速开始](#-快速开始) • [下载安装](#-下载安装) • [技术架构](#-技术架构) • [构建指南](#-构建指南)
+[功能特性](#功能特性) • [快速开始](#快速开始) • [下载安装](#下载安装) • [技术架构](#技术架构) • [构建指南](#构建指南)
 
 </div>
 <div align="center">
+  <h3>Windows 桌面版</h3>
+  <img src="screenshots/windows-1.png" alt="Windows Dashboard" width="800" style="margin-bottom: 10px;" />
+  <img src="screenshots/windows-2.png" alt="Windows Add Account" width="800" style="margin-bottom: 10px;" />
+  <img src="screenshots/windows-3.png" alt="Windows Settings" width="800" style="margin-bottom: 30px;" />
+
+  <h3>Android 移动端</h3>
   <img src="https://cloud.lingyunlab.com/f/vlsA/GithubREADME.png" alt="2FAuth Mobile App Screenshot" width="800"/>
 </div>
 
-## ✨ 下载安装
+## 下载安装
 
 ### Android APK下载
 
@@ -41,9 +45,9 @@
 - **存储空间**: 至少50MB可用空间
 - **网络**: 需要网络连接以访问2FAuth服务器
 
-## ✨ 功能特性
+## 功能特性
 
-### 🚀 核心功能
+### 核心功能
 
 #### 全自动OTP管理
 - **智能批量生成**: 应用启动时自动为所有账户并发生成验证码，速度提升3-5倍
@@ -57,7 +61,7 @@
 - **触摸反馈**: 专为移动端优化的交互动画
 - **智能图标**: 优先显示真实账户图标，自动回退到彩色首字母
 
-### 📱 移动端优化
+### 移动端优化
 
 #### 响应式设计
 - **原生级体验**: 专为移动设备设计的界面布局
@@ -71,7 +75,7 @@
 - **懒加载**: 按需加载组件和资源
 - **内存优化**: 高效的状态管理和垃圾回收
 
-### 🔐 安全特性
+### 安全特性
 
 #### 数据保护
 - **安全存储**: API密钥本地加密存储
@@ -84,7 +88,7 @@
 - **权限最小化**: 仅请求必要的系统权限
 - **透明操作**: 所有网络请求都有明确的用途说明
 
-### 🎨 用户体验
+### 用户体验
 
 #### 现代化界面
 - **Material Design**: 遵循现代设计原则
@@ -98,7 +102,7 @@
 - **批量操作**: 支持多选和批量管理
 - **自动备份**: 数据导入导出功能
 
-## 🛠 技术架构
+## 技术架构
 
 ### 前端技术栈
 
@@ -198,7 +202,7 @@ export const useAccountsStore = defineStore('accounts', () => {
 })
 ```
 
-## 🚀 快速开始
+## 快速开始
 
 ### 环境要求
 
@@ -229,7 +233,7 @@ export const useAccountsStore = defineStore('accounts', () => {
    yarn dev
    ```
 
-## 🔨 构建指南
+## 构建指南
 
 ### Web版本构建
 
@@ -302,7 +306,7 @@ npx tauri build --target x86_64-apple-darwin     # macOS
 npx tauri build --target x86_64-unknown-linux-gnu # Linux
 ```
 
-## 🤝 贡献指南
+## 贡献指南
 
 欢迎提交Issue和Pull Request！
 
@@ -312,11 +316,11 @@ npx tauri build --target x86_64-unknown-linux-gnu # Linux
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 打开一个Pull Request
 
-## 📄 许可证
+## 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 🙏 致谢
+## 致谢
 
 - [2FAuth](https://github.com/Bubka/2FAuth) - 优秀的2FA管理系统
 - [Vue.js](https://vuejs.org/) - 渐进式JavaScript框架
@@ -326,5 +330,5 @@ npx tauri build --target x86_64-unknown-linux-gnu # Linux
 ---
 
 
-如果这个项目对你有帮助，请给个⭐️支持一下！
+如果这个项目对你有帮助，请给个 star 支持一下！
 
