@@ -18,6 +18,14 @@
       </div>
     </header>
 
+    <!-- 桌面端浮动计时器 (当主计时器不可见时显示) -->
+    <div class="hidden md:block fixed top-6 right-8 z-50">
+      <HeaderOTPTimer 
+        v-if="accounts.length > 0" 
+        :contentTimerVisible="contentTimerVisible"
+      />
+    </div>
+
     <main class="px-4 py-6 pt-[80px] md:pt-10 md:pb-24 md:px-8 md:max-w-7xl md:mx-auto h-full" @click="resetAllCards">
       <!-- 初始加载状态 -->
       <div v-if="isLoadingInitial" class="flex flex-col items-center justify-center py-20 animate-fade-in">

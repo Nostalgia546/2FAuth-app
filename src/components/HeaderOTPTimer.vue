@@ -10,7 +10,7 @@
   >
     <div 
       v-if="showTimer && shouldShowHeader" 
-      class="flex items-center space-x-3 mr-4"
+      class="flex items-center space-x-3 md:bg-white/90 md:backdrop-blur-xl md:shadow-xl md:rounded-full md:pl-2 md:pr-5 md:py-1.5 md:border md:border-gray-200/50 md:hover:shadow-2xl transition-all duration-300 md:cursor-default"
     >
       <!-- 加大的紧凑进度环 -->
       <div class="relative w-10 h-10">
@@ -51,7 +51,7 @@
       </div>
       
       <!-- 紧凑进度条 - 不显示时间文字 -->
-      <div class="flex flex-col min-w-0" style="width: 60px;">
+      <div class="flex flex-col min-w-0 w-[60px] md:w-[100px] transition-all duration-300">
         <div class="relative h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <!-- 进度条 -->
           <div
@@ -111,7 +111,7 @@ const handleVisibilityChange = () => {
   if (!wasVisible && isPageVisible && globalOTPData.value) {
     // 页面从隐藏变为可见时，立即同步到store中的最新数据
     const actualRemaining = globalOTPData.value.remaining_time
-    const actualProgress = ((period.value - actualRemaining) / period.value) * 100
+    const actualProgress = (actualRemaining / period.value) * 100
     
     storeRemaining.value = actualRemaining
     lastStoreUpdate.value = Date.now()
@@ -181,12 +181,12 @@ const startSmoothAnimation = () => {
     }
     
     // 根据平滑的剩余时间计算进度
-    const actualProgress = ((period.value - smoothRemaining.value) / period.value) * 100
+    const actualProgress = (smoothRemaining.value / period.value) * 100
     smoothProgress.value = Math.min(100, Math.max(0, actualProgress))
     
-    // 确保剩余时间为0时进度达到100%
+    // 确保剩余时间为0时进度达到0%
     if (smoothRemaining.value <= 0) {
-      smoothProgress.value = 100
+      smoothProgress.value = 0
       smoothRemaining.value = 0
     }
   }, 50) // 50ms更新一次，更平滑
@@ -202,7 +202,7 @@ const stopSmoothAnimation = () => {
 // 监听OTP数据变化
 watch(globalOTPData, (newData) => {
   if (newData) {
-    const actualProgress = ((period.value - newData.remaining_time) / period.value) * 100
+    const actualProgress = (newData.remaining_time / period.value) * 100
     storeRemaining.value = newData.remaining_time
     lastStoreUpdate.value = Date.now()
     smoothProgress.value = actualProgress
