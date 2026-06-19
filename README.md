@@ -31,6 +31,14 @@
 
 ## 下载安装
 
+### Windows 桌面版下载
+
+你可以从[Releases页面](https://github.com/Nostalgia546/2FAuth-app/releases)下载最新版本的Windows安装包：
+
+1. 访问 [Releases](https://github.com/Nostalgia546/2FAuth-app/releases)
+2. 下载最新版本的 `2FAuth_*.*.*_x64-setup.exe` 文件
+3. 双击运行安装程序完成安装
+
 ### Android APK下载
 
 你可以从[Releases页面](https://github.com/Nostalgia546/2FAuth-app/releases)下载最新版本的APK文件：
@@ -41,6 +49,7 @@
 
 ### 系统要求
 
+- **Windows**: Windows 10/11 64位系统 (需安装 WebView2)
 - **Android**: 7.0 (API 24) 及以上版本
 - **存储空间**: 至少50MB可用空间
 - **网络**: 需要网络连接以访问2FAuth服务器
