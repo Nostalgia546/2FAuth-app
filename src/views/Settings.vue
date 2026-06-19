@@ -377,7 +377,11 @@
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-gray-400 font-bold uppercase text-xs tracking-wider">开源主页</span>
-                <a href="https://github.com/Nostalgia546/2FAuth-app" target="_blank" class="font-black text-primary-600 hover:text-primary-700 underline underline-offset-2 transition-colors">GitHub 项目地址</a>
+                <a href="#" @click.prevent="openExternalLink('https://github.com/Nostalgia546/2FAuth-app')" class="font-black text-primary-600 hover:text-primary-700 underline underline-offset-2 transition-colors cursor-pointer">GitHub 项目地址</a>
+              </div>
+              <div class="flex justify-between items-center mt-3 border-t border-gray-100 pt-3">
+                <span class="text-gray-400 font-bold uppercase text-xs tracking-wider">作者</span>
+                <a href="#" @click.prevent="openExternalLink('https://github.com/Nostalgia546')" class="font-black text-primary-600 hover:text-primary-700 underline underline-offset-2 transition-colors cursor-pointer">Nostalgia546</a>
               </div>
             </div>
           </div>
@@ -494,6 +498,21 @@ const refreshData = async () => {
     appStore.showNotification('error', '刷新数据失败')
   } finally {
     isRefreshing.value = false
+  }
+}
+
+// 退出登录
+const openExternalLink = async (url) => {
+  try {
+    if (window.__TAURI_INTERNALS__) {
+      const { openUrl } = await import('@tauri-apps/plugin-opener')
+      await openUrl(url)
+    } else {
+      window.open(url, '_blank')
+    }
+  } catch (e) {
+    console.error('Failed to open link:', e)
+    window.open(url, '_blank')
   }
 }
 
