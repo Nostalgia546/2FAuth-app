@@ -13,10 +13,11 @@
     "windows": [
       {
         "title": "2FAuth",
-        "width": 900,
-        "height": 1600,
+        "width": 1200,
+        "height": 800,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "center": true
       }
     ],
     "security": {
