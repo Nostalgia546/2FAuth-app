@@ -109,7 +109,7 @@
             </label>
             <div class="flex items-center space-x-4">
               <div class="flex-shrink-0">
-                <AccountIcon v-if="formData.icon || formData.service || formData.account" :account="formData" size="large" />
+                <AccountIcon v-if="formData.icon" :account="formData" size="large" :key="iconKey" />
                 <div v-else class="h-16 w-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300">
                   <ImageIcon class="w-7 h-7" />
                 </div>
@@ -385,6 +385,7 @@ const showIconPicker = ref(false)
 const iconSource = ref('predefined') // 'predefined' or 'server'
 const isFetchingIcons = ref(false)
 const isLoading = ref(false)
+const iconKey = ref(0)
 const serverIcons = computed(() => accountsStore.icons)
 
 const formData = reactive({
@@ -420,6 +421,7 @@ const groups = computed(() => accountsStore.groups.filter(g => !['所有账户',
 const selectIcon = (iconValue) => {
   formData.icon = iconValue
   showIconPicker.value = false
+  iconKey.value++
 }
 
 const toggleIconPicker = async () => {
@@ -519,6 +521,7 @@ const processImageFile = async (file) => {
             
             // 填充表单数据
             Object.assign(formData, otpData)
+            iconKey.value++
             
             // 切换到手动添加模式显示解析结果
             addMethod.value = 'manual'
@@ -592,6 +595,7 @@ const handleIconUpload = (event) => {
       // 将图片转换为base64 data URL
       formData.icon = e.target.result
       showIconPicker.value = false
+      iconKey.value++
       appStore.showNotification('success', '自定义图标上传成功')
     }
     

@@ -208,10 +208,7 @@
               @touchstart="handleTouchStart($event, account)"
               @touchmove="handleTouchMove($event, account)"
               @touchend="handleTouchEnd($event, account)"
-              @mousedown="handleMouseDown($event, account)"
-              @mouseup="handleMouseUp"
-              @mouseleave="handleMouseUp"
-              @contextmenu.prevent="startLongPress(account)"
+              @contextmenu.prevent.stop="handleContextMenu($event, account)"
             >
               <!-- 隐藏的操作按钮 -->
               <div 
@@ -306,27 +303,60 @@
         </div>
 
         <!-- 排序模式下的操作栏 -->
-        <div v-if="isSortMode" class="fixed bottom-24 left-1/2 -translate-x-1/2 flex items-center space-x-4 bg-white/90 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-gray-200 z-50 animate-bounce-in w-max">
-          <button 
-            @click="cancelSort"
-            class="flex items-center space-x-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all active:scale-95 whitespace-nowrap min-w-fit"
-          >
-            <X class="w-5 h-5" />
-            <span>取消</span>
-          </button>
-          <button 
-            @click="saveSort"
-            class="flex items-center space-x-2 px-6 py-3 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-200 active:scale-95 whitespace-nowrap min-w-fit"
-          >
-            <Check class="w-5 h-5" />
-            <span>保存顺序</span>
-          </button>
+        <div v-if="isSortMode" class="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-50">
+          <div class="flex items-center space-x-4 bg-white/95 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-gray-200 animate-slide-up w-max">
+            <button 
+              @click="cancelSort"
+              class="flex items-center space-x-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-all active:scale-95 whitespace-nowrap min-w-fit"
+            >
+              <X class="w-5 h-5" />
+              <span>取消</span>
+            </button>
+            <button 
+              @click="saveSort"
+              class="flex items-center space-x-2 px-6 py-3 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-200 active:scale-95 whitespace-nowrap min-w-fit"
+            >
+              <Check class="w-5 h-5" />
+              <span>保存顺序</span>
+            </button>
+          </div>
         </div>
       </template>
     </main>
 
     <!-- 底部导航 -->
-    <BottomTabBar />
+    <BottomTabBar :hidden="isSortMode" />
+
+    <!-- 右键菜单 -->
+    <div 
+      v-if="contextMenu.show" 
+      :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+      class="fixed z-[100] bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 w-40 transform transition-all duration-200 origin-top-left"
+      @click.stop
+    >
+      <button 
+        @click="editAccount(contextMenu.account); hideContextMenu()" 
+        class="w-full px-4 py-3 flex items-center space-x-3 hover:bg-gray-50 text-gray-700 transition-colors"
+      >
+        <Edit class="w-5 h-5 text-gray-500" />
+        <span class="font-medium text-sm">编辑账户</span>
+      </button>
+      <button 
+        @click="startLongPress(contextMenu.account); hideContextMenu()" 
+        class="w-full px-4 py-3 flex items-center space-x-3 hover:bg-gray-50 text-gray-700 transition-colors"
+      >
+        <ArrowDownUp class="w-5 h-5 text-gray-500" />
+        <span class="font-medium text-sm">排序账户</span>
+      </button>
+      <div class="h-px bg-gray-100 my-1 mx-2"></div>
+      <button 
+        @click="deleteAccount(contextMenu.account); hideContextMenu()" 
+        class="w-full px-4 py-3 flex items-center space-x-3 hover:bg-red-50 text-red-600 transition-colors rounded-b-xl"
+      >
+        <Trash2 class="w-5 h-5 text-red-500" />
+        <span class="font-medium text-sm">删除账户</span>
+      </button>
+    </div>
 
     <!-- 删除确认对话框 -->
     <div v-if="accountToDelete" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -473,6 +503,14 @@ const initialLoadError = ref(false)
 // 内容区计时器可见性状态
 const contentTimerVisible = ref(true)
 
+// 右键菜单状态
+const contextMenu = ref({
+  show: false,
+  x: 0,
+  y: 0,
+  account: null
+})
+
 // 初始化认证
 authStore.initAuth()
 
@@ -610,17 +648,6 @@ const handleTouchStart = (event, account) => {
   }, LONG_PRESS_DURATION)
 }
 
-const handleMouseDown = (event, account) => {
-  if (isSortMode.value) return
-  longPressingId.value = account.id
-  longPressTimer.value = setTimeout(() => {
-    startLongPress(account)
-  }, LONG_PRESS_DURATION)
-}
-
-const handleMouseUp = () => {
-  clearLongPress()
-}
 
 const startLongPress = (account) => {
   if (selectedGroupId.value !== null) {
@@ -642,6 +669,36 @@ const clearLongPress = () => {
     longPressTimer.value = null
   }
   longPressingId.value = null
+}
+
+const handleContextMenu = (event, account) => {
+  if (isSortMode.value) return
+  
+  let x = event.clientX
+  let y = event.clientY
+  
+  const menuWidth = 160
+  const menuHeight = 160
+  
+  if (x + menuWidth > window.innerWidth) {
+    x = window.innerWidth - menuWidth - 10
+  }
+  if (y + menuHeight > window.innerHeight) {
+    y = window.innerHeight - menuHeight - 10
+  }
+  
+  contextMenu.value = {
+    show: true,
+    x,
+    y,
+    account
+  }
+}
+
+const hideContextMenu = () => {
+  if (contextMenu.value.show) {
+    contextMenu.value.show = false
+  }
 }
 
 const handleTouchMove = (event, account) => {
@@ -792,9 +849,11 @@ const handleCreateGroup = async () => {
 
 onMounted(() => {
   initializeData()
+  document.addEventListener('click', hideContextMenu)
 })
 
 onUnmounted(() => {
+  document.removeEventListener('click', hideContextMenu)
   // Cleanup managed by store
 })
 </script>

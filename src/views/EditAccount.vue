@@ -24,9 +24,13 @@
     </div>
 
     <!-- 主要内容 -->
-    <div v-else-if="account" class="p-6 space-y-6 md:max-w-2xl md:mx-auto">
-      <form @submit.prevent="handleSubmit" class="space-y-6">
-        <!-- 图标设置 -->
+    <div v-else-if="account" class="p-6 md:max-w-5xl md:mx-auto">
+      <form @submit.prevent="handleSubmit">
+        <div class="flex flex-col md:flex-row md:gap-8 items-start">
+          
+          <!-- 左侧：视觉管理区 -->
+          <div class="w-full md:w-5/12 space-y-6 mb-6 md:mb-0">
+            <!-- 图标设置 -->
         <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
           <div class="flex items-center space-x-3 mb-6">
             <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -132,6 +136,10 @@
             </div>
           </div>
         </div>
+          </div>
+          
+          <!-- 右侧：数据填写区 -->
+          <div class="w-full md:w-7/12 space-y-6">
 
         <!-- 服务名称 -->
         <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 shadow-lg">
@@ -207,6 +215,8 @@
             </div>
             <span v-else>保存更改</span>
           </button>
+        </div>
+          </div>
         </div>
       </form>
     </div>

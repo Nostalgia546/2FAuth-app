@@ -463,6 +463,10 @@ export const useAccountsStore = defineStore('accounts', () => {
       // 增加超时时间，因为创建账户可能涉及图标拉取等耗时操作
       const response = await api.post('/api/v1/twofaccounts', accountData, { timeout: 15000 })
       accounts.value.push(response.data)
+      
+      // 立即为新账户获取验证码，防止显示"暂无验证码"
+      generateAllOTPs([response.data.id]).catch(err => console.error("获取新账户OTP失败:", err))
+      
       appStore.showNotification('success', '账户添加成功')
       return response.data
     } catch (error) {
@@ -496,6 +500,10 @@ export const useAccountsStore = defineStore('accounts', () => {
       if (index !== -1) {
         accounts.value[index] = response.data
       }
+      
+      // 更新账户后也刷新一下该账户的验证码，防止密钥修改导致旧验证码无效
+      generateAllOTPs([accountId]).catch(err => console.error("刷新账户OTP失败:", err))
+      
       return response.data
     } catch (error) {
       console.error('更新账户失败:', error)
